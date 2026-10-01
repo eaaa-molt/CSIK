@@ -1,0 +1,2578 @@
+<!doctype html><html lang="da"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Cloud ID — Conditional Access Simulator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* ── Tokens ──────────────────────────────────────────────────────────────── */
+:root {
+  --accent:         #0078d4;
+  --accent-h:       #106ebe;
+  --accent-light:   #deecf9;
+  --sidebar:        #1a2433;
+  --sidebar-t:      #c8d3e0;
+  --sidebar-icon:   #7a95af;
+  --sidebar-act:    #60a5fa;
+  --sidebar-act-bg: rgba(96,165,250,.15);
+  --bg:             #f3f2f1;
+  --surface:        #ffffff;
+  --surface2:       #faf9f8;
+  --t1:             #323130;
+  --t2:             #605e5c;
+  --t3:             #a19f9d;
+  --border:         #edebe9;
+  --border2:        #c8c6c4;
+  --ok:             #107c10;
+  --ok-bg:          #dff6dd;
+  --err:            #a4262c;
+  --err-bg:         #fde7e9;
+  --warn:           #d83b01;
+  --warn-bg:        #fff4ce;
+  --info:           #7160e8;
+  --info-bg:        #f0effe;
+  --topbar-h:       48px;
+  --sidebar-w:      224px;
+  --radius:         4px;
+  --shadow:         0 2px 8px rgba(0,0,0,.10);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:       #1a1a1a;
+    --surface:  #252525;
+    --surface2: #2d2d2d;
+    --t1:       #f3f2f1;
+    --t2:       #a19f9d;
+    --t3:       #605e5c;
+    --border:   #3b3a39;
+    --border2:  #605e5c;
+    --ok:       #6ccb6c;
+    --ok-bg:    #0a2e0a;
+    --err:      #f1707b;
+    --err-bg:   #3a0d10;
+    --warn:     #f7a948;
+    --warn-bg:  #2e1e00;
+    --info:     #a99cf5;
+    --info-bg:  #1e1840;
+    --accent-light: #002848;
+    --shadow:   0 2px 8px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"] {
+  --bg:       #1a1a1a;
+  --surface:  #252525;
+  --surface2: #2d2d2d;
+  --t1:       #f3f2f1;
+  --t2:       #a19f9d;
+  --t3:       #605e5c;
+  --border:   #3b3a39;
+  --border2:  #605e5c;
+  --ok:       #6ccb6c;
+  --ok-bg:    #0a2e0a;
+  --err:      #f1707b;
+  --err-bg:   #3a0d10;
+  --warn:     #f7a948;
+  --warn-bg:  #2e1e00;
+  --info:     #a99cf5;
+  --info-bg:  #1e1840;
+  --accent-light: #002848;
+  --shadow:   0 2px 8px rgba(0,0,0,.35);
+}
+/* ── Reset & Base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  color: var(--t1);
+  background: var(--bg);
+  line-height: 1.5;
+}
+a { color: var(--accent); text-decoration: none; }
+button { cursor: pointer; font-family: inherit; font-size: 14px; border: none; }
+input, select, textarea { font-family: inherit; font-size: 14px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* ── App Shell ───────────────────────────────────────────────────────────── */
+#app { display: flex; height: 100vh; overflow: hidden; }
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+#sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--sidebar);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 200;
+}
+.sidebar-logo {
+  padding: 0 16px;
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  flex-shrink: 0;
+}
+.sidebar-logo-icon {
+  width: 24px; height: 24px;
+  background: var(--accent);
+  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.sidebar-logo-icon svg { width: 16px; height: 16px; fill: white; }
+.sidebar-logo-text { color: white; font-weight: 600; font-size: 13px; white-space: nowrap; }
+.sidebar-logo-sub { color: rgba(255,255,255,.5); font-size: 10px; font-weight: 400; }
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
+.sidebar-nav::-webkit-scrollbar { width: 4px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
+.nav-section-label {
+  padding: 16px 16px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--sidebar-icon);
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  color: var(--sidebar-t);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 0;
+  transition: background .12s;
+  border-left: 3px solid transparent;
+  user-select: none;
+}
+.nav-item:hover { background: rgba(255,255,255,.06); }
+.nav-item.active {
+  color: var(--sidebar-act);
+  background: var(--sidebar-act-bg);
+  border-left-color: var(--sidebar-act);
+}
+.nav-item svg { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; opacity: .8; }
+.nav-item.active svg { opacity: 1; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--accent);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  line-height: 16px;
+}
+/* Sidebar bottom: user switcher */
+.sidebar-bottom {
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding: 12px;
+  flex-shrink: 0;
+}
+.user-switcher-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--sidebar-icon);
+  margin-bottom: 6px;
+}
+.user-switcher-select {
+  width: 100%;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  color: var(--sidebar-t);
+  border-radius: var(--radius);
+  padding: 6px 8px;
+  font-size: 12px;
+}
+.user-switcher-select option { background: #1a2433; color: #c8d3e0; }
+/* ── Main area ───────────────────────────────────────────────────────────── */
+#main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* ── Top bar ─────────────────────────────────────────────────────────────── */
+#topbar {
+  height: var(--topbar-h);
+  min-height: var(--topbar-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 8px;
+  z-index: 100;
+  flex-shrink: 0;
+}
+.topbar-crumb {
+  color: var(--t2);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.topbar-crumb span { color: var(--t1); font-weight: 500; }
+.topbar-spacer { flex: 1; }
+.tenant-chip {
+  font-size: 12px;
+  color: var(--t2);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tenant-chip strong { color: var(--t1); }
+.theme-toggle {
+  width: 32px; height: 32px;
+  border-radius: var(--radius);
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--t2);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.theme-toggle:hover { background: var(--surface2); }
+.theme-toggle svg { width: 16px; height: 16px; fill: currentColor; }
+/* ── Page content ────────────────────────────────────────────────────────── */
+#content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 28px 48px;
+}
+.page-header {
+  margin-bottom: 24px;
+}
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--t1);
+  text-wrap: balance;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: var(--t2);
+  margin-top: 2px;
+}
+/* ── Cards ───────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.card-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card-title { font-weight: 600; font-size: 14px; }
+.card-body { padding: 20px; }
+/* ── Stat tiles ──────────────────────────────────────────────────────────── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.stat-label { font-size: 12px; color: var(--t2); font-weight: 500; }
+.stat-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 4px;
+}
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  font-weight: 500;
+  font-size: 14px;
+  transition: background .12s, color .12s;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+.btn-primary:hover { background: var(--accent-h); }
+.btn-secondary {
+  background: var(--surface);
+  color: var(--t1);
+  border: 1px solid var(--border2);
+}
+.btn-secondary:hover { background: var(--surface2); }
+.btn-danger { background: var(--err); color: white; }
+.btn-danger:hover { background: #8a1f24; }
+.btn svg { width: 14px; height: 14px; fill: currentColor; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+/* ── Badges ──────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.badge-enabled  { background: var(--ok-bg);   color: var(--ok); }
+.badge-disabled { background: var(--bg);       color: var(--t3); border: 1px solid var(--border2); }
+.badge-report   { background: var(--info-bg);  color: var(--info); }
+.badge-block    { background: var(--err-bg);   color: var(--err); }
+.badge-grant    { background: var(--ok-bg);    color: var(--ok); }
+.badge-mfa      { background: var(--warn-bg);  color: var(--warn); }
+.badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th {
+  text-align: left;
+  padding: 8px 14px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--t2);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  white-space: nowrap;
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--t1);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td { background: var(--surface2); }
+.td-name { font-weight: 500; }
+/* ── Command bar ─────────────────────────────────────────────────────────── */
+.cmd-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.cmd-bar-right { margin-left: auto; }
+/* ── Forms ───────────────────────────────────────────────────────────────── */
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--t1);
+  margin-bottom: 4px;
+}
+.form-label-hint { font-weight: 400; color: var(--t2); font-size: 12px; margin-left: 4px; }
+.form-input, .form-select {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 7px 10px;
+  color: var(--t1);
+  transition: border-color .12s;
+}
+.form-input:focus, .form-select:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
+.form-select option { background: var(--surface); color: var(--t1); }
+.radio-group, .check-group { display: flex; flex-direction: column; gap: 6px; }
+.radio-item, .check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background .12s;
+}
+.radio-item:hover, .check-item:hover { background: var(--surface2); }
+.radio-item.selected, .check-item.selected {
+  background: var(--accent-light);
+  border-color: var(--accent);
+}
+.radio-item input, .check-item input { margin-top: 2px; accent-color: var(--accent); }
+.radio-item label, .check-item label {
+  font-size: 13px;
+  cursor: pointer;
+  flex: 1;
+}
+.radio-item label small, .check-item label small {
+  display: block;
+  color: var(--t2);
+  font-size: 12px;
+  font-weight: 400;
+}
+.state-toggle { display: flex; gap: 8px; }
+.state-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--t2);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  transition: all .12s;
+}
+.state-btn:hover { background: var(--surface2); }
+.state-btn.active-enabled  { border-color: var(--ok);   background: var(--ok-bg);   color: var(--ok); }
+.state-btn.active-report   { border-color: var(--info); background: var(--info-bg); color: var(--info); }
+.state-btn.active-disabled { border-color: var(--border2); background: var(--surface); color: var(--t1); }
+/* ── Tag pills for selections ────────────────────────────────────────────── */
+.tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.tag-pill button {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  margin-left: 2px;
+}
+/* ── Slide-in panel ──────────────────────────────────────────────────────── */
+#panel-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+#panel-overlay.open { opacity: 1; pointer-events: all; }
+#policy-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 520px;
+  max-width: 100vw;
+  height: 100vh;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform .22s ease;
+  box-shadow: -4px 0 24px rgba(0,0,0,.15);
+}
+#policy-panel.open { transform: translateX(0); }
+.panel-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.panel-title { font-weight: 700; font-size: 16px; flex: 1; }
+.panel-close {
+  width: 28px; height: 28px;
+  border-radius: var(--radius);
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--t2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  transition: background .12s;
+}
+.panel-close:hover { background: var(--surface2); }
+.panel-body { flex: 1; overflow-y: auto; padding: 20px; }
+.panel-body::-webkit-scrollbar { width: 6px; }
+.panel-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+.panel-section { margin-bottom: 24px; }
+.panel-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--t1);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+/* ── What If layout ──────────────────────────────────────────────────────── */
+.whatif-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 900px) { .whatif-layout { grid-template-columns: 1fr; } }
+.whatif-form-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  position: sticky;
+  top: 0;
+}
+.whatif-results { display: flex; flex-direction: column; gap: 12px; }
+/* ── Verdict banner ──────────────────────────────────────────────────────── */
+.verdict {
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border-left: 4px solid;
+}
+.verdict-granted { background: var(--ok-bg);  border-color: var(--ok); }
+.verdict-blocked  { background: var(--err-bg); border-color: var(--err); }
+.verdict-report   { background: var(--info-bg); border-color: var(--info); }
+.verdict-icon { font-size: 24px; line-height: 1; flex-shrink: 0; }
+.verdict-title { font-weight: 700; font-size: 16px; }
+.verdict-detail { font-size: 13px; color: var(--t2); margin-top: 2px; }
+.verdict-controls { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+/* ── Policy eval card ────────────────────────────────────────────────────── */
+.eval-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.eval-header {
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--surface2);
+}
+.eval-header:hover { background: var(--border); }
+.eval-applies-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.eval-applies-yes  { background: var(--ok-bg);   color: var(--ok); }
+.eval-applies-no   { background: var(--bg);       color: var(--t3); border: 1px solid var(--border2); }
+.eval-applies-rep  { background: var(--info-bg);  color: var(--info); }
+.eval-policy-name  { font-weight: 600; font-size: 13px; flex: 1; }
+.eval-chevron { font-size: 12px; color: var(--t3); transition: transform .15s; }
+.eval-chevron.open { transform: rotate(90deg); }
+.eval-body { padding: 0; display: none; }
+.eval-body.open { display: block; }
+.eval-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.eval-step:last-child { border-bottom: none; }
+.step-icon { font-size: 14px; flex-shrink: 0; line-height: 1.4; }
+.step-label { font-weight: 600; color: var(--t2); min-width: 110px; font-size: 12px; }
+.step-detail { flex: 1; color: var(--t1); }
+.step-result {
+  padding: 10px 16px;
+  background: var(--surface2);
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--t2);
+}
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-title { font-size: 16px; font-weight: 600; color: var(--t1); margin-bottom: 6px; }
+.empty-sub { font-size: 13px; }
+/* ── Misc ────────────────────────────────────────────────────────────────── */
+.text-muted { color: var(--t2); }
+.text-sm    { font-size: 12px; }
+.mt-1 { margin-top: 4px; }
+.mt-2 { margin-top: 8px; }
+.mt-3 { margin-top: 16px; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.info-box {
+  background: var(--info-bg);
+  border: 1px solid var(--info);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--t1);
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.info-box .info-icon { font-size: 16px; flex-shrink: 0; }
+.grant-controls-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.cond-section { margin-top: 10px; }
+.cond-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.cond-toggle-label input { accent-color: var(--accent); }
+.sub-options { padding-left: 24px; border-left: 2px solid var(--border); }
+.user-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+.log-time { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--t2); white-space: nowrap; }
+/* Checkbox toggle */
+.toggle-switch { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.toggle-switch input[type="checkbox"] { display: none; }
+.toggle-track {
+  width: 36px; height: 20px;
+  background: var(--border2);
+  border-radius: 10px;
+  position: relative;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.toggle-track::after {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  background: white;
+  border-radius: 50%;
+  top: 3px; left: 3px;
+  transition: transform .2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+input:checked + .toggle-track { background: var(--accent); }
+input:checked + .toggle-track::after { transform: translateX(16px); }
+</style>
+
+<div id="app">
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">
+        <svg viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="6"/><rect x="9" y="1" width="6" height="6"/><rect x="1" y="9" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/></svg>
+      </div>
+      <div>
+        <div class="sidebar-logo-text">Cloud ID</div>
+        <div class="sidebar-logo-sub">Conditional Access Simulator</div>
+      </div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-section-label">Oversigt</div>
+      <div class="nav-item" data-page="overview" onclick="navigate('overview')">
+        <svg viewBox="0 0 16 16"><path d="M0 0h7v7H0V0zm9 0h7v7H9V0zM0 9h7v7H0V9zm9 0h7v7H9V9z"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-section-label">Conditional Access</div>
+      <div class="nav-item" data-page="policies" onclick="navigate('policies')">
+        <svg viewBox="0 0 16 16"><path d="M2 2h12v2H2V2zm0 4h12v2H2V6zm0 4h7v2H2v-2zm0 4h7v2H2v-2zm9-4h5v6h-5v-6z"/></svg>
+        Politikker
+        <span class="nav-badge" id="nav-badge-count">6</span>
+      </div>
+      <div class="nav-item" data-page="whatif" onclick="navigate('whatif')">
+        <svg viewBox="0 0 16 16"><path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm1 12H7V7h2v5zm0-7H7V3h2v2z"/></svg>
+        What If
+      </div>
+      <div class="nav-item" data-page="locations" onclick="navigate('locations')">
+        <svg viewBox="0 0 16 16"><path d="M8 0C5.2 0 3 2.2 3 5c0 4.2 5 11 5 11s5-6.8 5-11c0-2.8-2.2-5-5-5zm0 7.5C6.6 7.5 5.5 6.4 5.5 5S6.6 2.5 8 2.5 10.5 3.6 10.5 5 9.4 7.5 8 7.5z"/></svg>
+        Named Locations
+      </div>
+      <div class="nav-section-label">Identitet</div>
+      <div class="nav-item" data-page="users" onclick="navigate('users')">
+        <svg viewBox="0 0 16 16"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zm-5 6a5 5 0 0110 0H3z"/></svg>
+        Brugere
+      </div>
+      <div class="nav-item" data-page="groups" onclick="navigate('groups')">
+        <svg viewBox="0 0 16 16"><path d="M5.5 7a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm5 0a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM0 14c0-2.5 2-4.5 5.5-4.5S11 11.5 11 14v.5H0V14zm10.2-4.2c1.7.6 2.8 2.1 2.8 4.2v.5h3v-.5c0-2.1-1.6-3.9-3.7-4.2-.7 0-1.4.02-2.1 0z"/></svg>
+        Grupper
+      </div>
+      <div class="nav-section-label">Overvågning</div>
+      <div class="nav-item" data-page="logs" onclick="navigate('logs')">
+        <svg viewBox="0 0 16 16"><path d="M1 3h14v2H1V3zm0 4h14v2H1V7zm0 4h9v2H1v-2z"/></svg>
+        Sign-in logs
+        <span class="nav-badge" id="nav-badge-logs" style="display:none">0</span>
+      </div>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="user-switcher-label">Simulér som bruger</div>
+      <select class="user-switcher-select" id="current-user-select" onchange="switchUser(this.value)">
+      </select>
+    </div>
+  </nav>
+
+  <!-- Main area -->
+  <div id="main-area">
+    <!-- Top bar -->
+    <header id="topbar">
+      <div class="topbar-crumb">
+        Contoso &rsaquo; <span id="crumb-page">Dashboard</span>
+      </div>
+      <div class="topbar-spacer"></div>
+      <button class="btn btn-secondary btn-sm" onclick="exportData()" title="Eksportér aktuel tilstand som JSON" style="font-size:12px;gap:5px">
+        <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path d="M8 1v8.5l-2.5-2.5-1 1L8 12l3.5-4-1-1L8 9.5V1H8zM2 13v1h12v-1H2z"/></svg>
+        Gem data
+      </button>
+      <label class="btn btn-secondary btn-sm" style="font-size:12px;gap:5px;cursor:pointer" title="Indlæs JSON-fil">
+        <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path d="M8 11V2.5l2.5 2.5 1-1L8 0 4.5 4l1 1L8 2.5V11h1-1zm-6 2v1h12v-1H2z"/></svg>
+        Indlæs data
+        <input type="file" accept=".json,application/json" style="display:none" onchange="importData(this)">
+      </label>
+      <div class="tenant-chip">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6"/><rect x="9" y="1" width="6" height="6"/><rect x="1" y="9" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/></svg>
+        <strong>Contoso</strong>&nbsp;contoso.com
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Skift tema">
+        <svg id="theme-icon" viewBox="0 0 16 16"><path d="M8 12a4 4 0 100-8 4 4 0 000 8zM8 0h1v2H8V0zM0 7h2v2H0V7zm14 0h2v2h-2V7zM8 14h1v2H8v-2zM2.2 2.2l1.4 1.4-1.4 1.4-1.4-1.4 1.4-1.4zm10 0l1.4 1.4-1.4 1.4-1.4-1.4 1.4-1.4zM2.2 11.4l1.4 1.4-1.4 1.4-1.4-1.4 1.4-1.4zm10 0l1.4 1.4-1.4 1.4-1.4-1.4 1.4-1.4z"/></svg>
+      </button>
+    </header>
+
+    <!-- Content -->
+    <main id="content"></main>
+  </div>
+</div>
+
+<!-- Panel overlay -->
+<div id="panel-overlay" onclick="closePanel()"></div>
+
+
+<!-- Policy slide-in panel -->
+<div id="policy-panel">
+  <div class="panel-header">
+    <div class="panel-title" id="panel-title">Ny politik</div>
+    <button class="panel-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+  <div class="panel-footer">
+    <button class="btn btn-secondary" onclick="closePanel()">Annuller</button>
+    <button class="btn btn-danger btn-sm" id="panel-delete-btn" onclick="panelDelete()" style="margin-right:auto;display:none">Slet</button>
+    <button class="btn btn-primary" onclick="panelSave()">Gem</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════════════════════════════════
+const COLORS = ['#0078d4','#107c10','#d83b01','#7160e8','#0099bc','#c239b3','#498205'];
+function avatarColor(name) { let h=0; for(let c of name) h=(h*31+c.charCodeAt(0))%COLORS.length; return COLORS[h]; }
+function initials(name) { return name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase(); }
+
+const db = {
+  currentUserId: 'u-anna',
+  currentPage: 'overview',
+
+  users: [
+    { id:'u-anna',    name:'Anna Nielsen',       email:'anna.nielsen@contoso.com',    groups:['g-all','g-employees'],                      mfaRegistered:true,  deviceCompliant:false, guestUser:false, dept:'Salg',        role:'Account Manager' },
+    { id:'u-bjorn',   name:'Bjørn Hansen',        email:'bjorn.hansen@contoso.com',    groups:['g-all','g-employees','g-it'],               mfaRegistered:true,  deviceCompliant:true,  guestUser:false, dept:'IT',          role:'IT-administrator' },
+    { id:'u-cecilie', name:'Cecilie Madsen',      email:'cecilie.madsen@contoso.com',  groups:['g-all','g-employees','g-executives'],       mfaRegistered:true,  deviceCompliant:true,  guestUser:false, dept:'Ledelse',     role:'CEO' },
+    { id:'u-david',   name:'David Larsen',        email:'david.larsen@contoso.com',    groups:['g-all','g-employees'],                      mfaRegistered:false, deviceCompliant:false, guestUser:false, dept:'Salg',        role:'Sales Representative' },
+    { id:'u-eva',     name:'Eva Christensen',     email:'eva.christensen@partner.dk',  groups:['g-guests'],                                 mfaRegistered:false, deviceCompliant:false, guestUser:true,  dept:'Ekstern',     role:'Partner Contact' },
+    { id:'u-admin',   name:'Kasper Lindberg',     email:'kasper.lindberg@contoso.com', groups:['g-all','g-employees','g-it'],               mfaRegistered:true,  deviceCompliant:true,  guestUser:false, dept:'IT',          role:'Global Administrator', isAdmin:true },
+    { id:'u-sofia',   name:'Sofia Andersen',      email:'sofia.andersen@nexusconsulting.se', groups:['g-guests'],                            mfaRegistered:false, deviceCompliant:false, guestUser:true,  dept:'Ekstern',     role:'Ekstern konsulent (Nexus Consulting)' },
+    { id:'u-breakglass', name:'Nødberedskab Contoso', email:'breakglass@contoso.com',   groups:['g-breakglass'],                              mfaRegistered:false, deviceCompliant:false, guestUser:false, dept:'IT',          role:'Break-Glass / Nødadgangskonto', isBreakGlass:true },
+  ],
+
+  groups: [
+    { id:'g-all',       name:'All Users',       desc:'Alle brugere i organisationen' },
+    { id:'g-employees', name:'Employees',        desc:'Ansatte medarbejdere' },
+    { id:'g-it',        name:'IT Department',    desc:'IT-afdelingen' },
+    { id:'g-executives',name:'Executives',       desc:'Ledelsesgruppe' },
+    { id:'g-guests',    name:'Guests',           desc:'Gæstebrugere fra eksterne organisationer' },
+    { id:'g-breakglass',name:'Break-Glass Accounts', desc:'Nødadgangskonti til brug hvis normal administrator-adgang er utilgængelig eller MFA-tjenesten er nede' },
+  ],
+
+  apps: [
+    { id:'app-all',       name:'All cloud apps' },
+    { id:'app-m365',      name:'Microsoft 365' },
+    { id:'app-azure',     name:'Microsoft Azure Management' },
+    { id:'app-sharepoint',name:'SharePoint Online' },
+    { id:'app-exchange',  name:'Exchange Online' },
+    { id:'app-teams',     name:'Microsoft Teams' },
+    { id:'app-hr',        name:'Contoso HR Portal' },
+  ],
+
+  namedLocations: [
+    { id:'loc-office', name:'Contoso Kontor (DK)',   type:'ip',      trusted:true,  details:'192.168.1.0/24, 10.0.0.0/8' },
+    { id:'loc-dk',     name:'Danmark',               type:'country', trusted:true,  details:'DK' },
+    { id:'loc-eu',     name:'EU-lande',              type:'country', trusted:true,  details:'Alle EU-medlemslande' },
+    { id:'loc-unknown',name:'Ukendt/Udland',         type:'dynamic', trusted:false, details:'Alle lokationer uden for betroede lokationer' },
+  ],
+
+  policies: [
+    {
+      id:'pol-1', name:'Kræv MFA for alle brugere', state:'enabled',
+      users:{ includeAll:true, includeGroups:[], includeUsers:[], excludeGroups:[], excludeUsers:['u-admin'] },
+      apps:{ includeAll:true, includeApps:[], excludeApps:[] },
+      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:false,levels:[]} },
+      grant:{ operator:'OR', controls:['mfa'] }
+    },
+    {
+      id:'pol-2', name:'Bloker ældre godkendelsesmetoder', state:'enabled',
+      users:{ includeAll:true, includeGroups:[], includeUsers:[], excludeGroups:[], excludeUsers:[] },
+      apps:{ includeAll:true, includeApps:[], excludeApps:[] },
+      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:true,apps:['exchangeActivesync','other']}, signInRisk:{enabled:false,levels:[]} },
+      grant:{ operator:'OR', controls:['block'] }
+    },
+    {
+      id:'pol-3', name:'Kræv kompatibel enhed – Azure Management', state:'reportOnly',
+      users:{ includeAll:true, includeGroups:[], includeUsers:[], excludeGroups:[], excludeUsers:[] },
+      apps:{ includeAll:false, includeApps:['app-azure'], excludeApps:[] },
+      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:false,levels:[]} },
+      grant:{ operator:'AND', controls:['mfa','compliantDevice'] }
+    },
+    {
+      id:'pol-4', name:'Bloker høj-risiko logins', state:'enabled',
+      users:{ includeAll:true, includeGroups:[], includeUsers:[], excludeGroups:[], excludeUsers:[] },
+      apps:{ includeAll:true, includeApps:[], excludeApps:[] },
+      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:true,levels:['high']} },
+      grant:{ operator:'OR', controls:['block'] }
+    },
+    {
+      id:'pol-5', name:'Kræv MFA – gæstebrugere', state:'enabled',
+      users:{ includeAll:false, includeGroups:['g-guests'], includeUsers:[], excludeGroups:[], excludeUsers:[] },
+      apps:{ includeAll:true, includeApps:[], excludeApps:[] },
+      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:false,levels:[]} },
+      grant:{ operator:'OR', controls:['mfa'] }
+    },
+    {
+      id:'pol-6', name:'Bloker ukendte lokationer – Ledelse', state:'enabled',
+      users:{ includeAll:false, includeGroups:['g-executives'], includeUsers:[], excludeGroups:[], excludeUsers:[] },
+      apps:{ includeAll:true, includeApps:[], excludeApps:[] },
+      conditions:{ locations:{enabled:true,includeAll:true,includeLocations:[],excludeLocations:['loc-office','loc-dk']}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:false,levels:[]} },
+      grant:{ operator:'OR', controls:['block'] }
+    },
+  ],
+
+  signInLogs: [],
+  nextPolicyId: 7,
+  nextGroupId: 1,
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// EVALUATION ENGINE
+// ════════════════════════════════════════════════════════════════════════════
+const CONTROL_LABELS = {
+  mfa:'Kræv MFA', compliantDevice:'Kræv kompatibel enhed',
+  hybridJoin:'Kræv Hybrid Azure AD-joined enhed',
+  approvedApp:'Kræv godkendt klientapp',
+  appProtection:'Kræv app-beskyttelsespolitik',
+  block:'Blokér adgang'
+};
+const RISK_LABELS = { none:'Ingen', low:'Lav', medium:'Medium', high:'Høj' };
+const PLATFORM_LABELS = { windows:'Windows', ios:'iOS', android:'Android', macos:'macOS', linux:'Linux' };
+const CLIENT_APP_LABELS = { browser:'Browser', mobileDesktop:'Mobile/Desktop-apps', exchangeActivesync:'Exchange ActiveSync', other:'Andre klienter (ældre)' };
+
+function findUser(id) { return db.users.find(u=>u.id===id); }
+function findGroup(id) { return db.groups.find(g=>g.id===id); }
+function findApp(id) { return db.apps.find(a=>a.id===id); }
+function findLocation(id) { return db.namedLocations.find(l=>l.id===id); }
+
+function isUserInScope(user, uc) {
+  // Exclude first
+  if (uc.excludeUsers && uc.excludeUsers.includes(user.id))
+    return { ok:false, reason:'Brugeren er direkte ekskluderet fra politikken' };
+  if (uc.excludeGroups) {
+    for (const gid of uc.excludeGroups) {
+      if (user.groups.includes(gid)) {
+        return { ok:false, reason:`Ekskluderet via gruppe: ${findGroup(gid)?.name}` };
+      }
+    }
+  }
+  // Include
+  if (uc.includeAll) return { ok:true, reason:'Alle brugere er inkluderet' };
+  if (uc.includeUsers && uc.includeUsers.includes(user.id))
+    return { ok:true, reason:'Brugeren er direkte inkluderet' };
+  if (uc.includeGroups) {
+    for (const gid of uc.includeGroups) {
+      if (user.groups.includes(gid)) {
+        return { ok:true, reason:`Inkluderet via gruppe: ${findGroup(gid)?.name}` };
+      }
+    }
+  }
+  return { ok:false, reason:'Brugeren er ikke i politikkens brugeromfang' };
+}
+
+function isAppInScope(appId, ac) {
+  if (ac.includeAll) {
+    if (ac.excludeApps && ac.excludeApps.includes(appId))
+      return { ok:false, reason:`Appen er ekskluderet: ${findApp(appId)?.name}` };
+    return { ok:true, reason:'Alle cloud-apps er inkluderet' };
+  }
+  if (ac.includeApps && ac.includeApps.includes(appId)) {
+    return { ok:true, reason:`Appen er inkluderet: ${findApp(appId)?.name}` };
+  }
+  return { ok:false, reason:'Appen er ikke i politikkens appomfang' };
+}
+
+function checkConditions(conds, sc) {
+  const enabled = conds.clientApps.enabled || conds.devicePlatforms.enabled ||
+                  conds.locations.enabled   || conds.signInRisk.enabled;
+  if (!enabled) return { ok:true, reason:'Ingen betingelser konfigureret – gælder altid' };
+
+  // Client apps
+  if (conds.clientApps.enabled && conds.clientApps.apps.length > 0) {
+    if (!conds.clientApps.apps.includes(sc.clientApp)) {
+      const names = conds.clientApps.apps.map(a=>CLIENT_APP_LABELS[a]||a).join(', ');
+      return { ok:false, reason:`Klientapp-betingelse ikke opfyldt (kræver: ${names}; bruger: ${CLIENT_APP_LABELS[sc.clientApp]||sc.clientApp})` };
+    }
+  }
+  // Device platforms
+  if (conds.devicePlatforms.enabled && conds.devicePlatforms.platforms.length > 0) {
+    if (!conds.devicePlatforms.platforms.includes(sc.devicePlatform)) {
+      const names = conds.devicePlatforms.platforms.map(p=>PLATFORM_LABELS[p]||p).join(', ');
+      return { ok:false, reason:`Enhedsplatform-betingelse ikke opfyldt (gælder for: ${names}; bruger: ${PLATFORM_LABELS[sc.devicePlatform]||sc.devicePlatform})` };
+    }
+  }
+  // Sign-in risk
+  if (conds.signInRisk.enabled && conds.signInRisk.levels.length > 0) {
+    if (!conds.signInRisk.levels.includes(sc.signInRisk)) {
+      const names = conds.signInRisk.levels.map(l=>RISK_LABELS[l]||l).join(', ');
+      return { ok:false, reason:`Loginrisiko-betingelse ikke opfyldt (gælder ved: ${names}; aktuelt: ${RISK_LABELS[sc.signInRisk]||sc.signInRisk})` };
+    }
+  }
+  // Locations
+  if (conds.locations.enabled) {
+    const loc = findLocation(sc.locationId);
+    const lc = conds.locations;
+    if (lc.includeAll) {
+      if (lc.excludeLocations && lc.excludeLocations.includes(sc.locationId)) {
+        return { ok:false, reason:`Lokation er ekskluderet: ${loc?.name} – politikken gælder IKKE herfra` };
+      }
+      return { ok:true, reason:`Alle lokationer inkluderet (ekskl. evt. undtagelser); aktuelt: ${loc?.name}` };
+    }
+    if (lc.includeLocations && lc.includeLocations.includes(sc.locationId)) {
+      return { ok:true, reason:`Lokation er inkluderet: ${loc?.name}` };
+    }
+    return { ok:false, reason:`Lokation er ikke i politikkens lokationsomfang: ${loc?.name}` };
+  }
+
+  return { ok:true, reason:'Alle betingelser opfyldt' };
+}
+
+function evaluatePolicy(policy, sc) {
+  const r = { policyId:policy.id, name:policy.name, state:policy.state, steps:[], applies:false, grantResult:null, reason:null };
+  if (policy.state === 'disabled') {
+    r.reason='Politikken er deaktiveret'; return r;
+  }
+  const user = findUser(sc.userId);
+  // Step 1: user
+  const uRes = isUserInScope(user, policy.users);
+  r.steps.push({ label:'Brugeromfang', ok:uRes.ok, detail:uRes.reason });
+  if (!uRes.ok) { r.reason=uRes.reason; return r; }
+  // Step 2: app
+  const aRes = isAppInScope(sc.appId, policy.apps);
+  r.steps.push({ label:'App-omfang', ok:aRes.ok, detail:aRes.reason });
+  if (!aRes.ok) { r.reason=aRes.reason; return r; }
+  // Step 3: conditions
+  const cRes = checkConditions(policy.conditions, sc);
+  r.steps.push({ label:'Betingelser', ok:cRes.ok, detail:cRes.reason });
+  if (!cRes.ok) { r.reason=cRes.reason; return r; }
+
+  r.applies = true;
+  r.grantResult = policy.grant.controls.includes('block')
+    ? { type:'block', controls:[], label:'Blokér adgang' }
+    : { type:'grant', controls:policy.grant.controls, operator:policy.grant.operator,
+        label:policy.grant.controls.map(c=>CONTROL_LABELS[c]).join(policy.grant.operator==='AND'?' OG ':' ELLER ') };
+  return r;
+}
+
+function runWhatIf(sc) {
+  const user = findUser(sc.userId);
+  const results = db.policies.map(p => evaluatePolicy(p, sc));
+  const enabled = results.filter(r=>r.applies && r.state==='enabled');
+  const reportOnly = results.filter(r=>r.applies && r.state==='reportOnly');
+
+  let overall;
+  if (enabled.some(r=>r.grantResult.type==='block')) {
+    overall = { type:'blocked', title:'Adgang blokeret', detail:'En eller flere aktiverede politikker blokerer adgang.', controls:[] };
+  } else {
+    const required = new Set();
+    for (const r of enabled) r.grantResult.controls.forEach(c=>required.add(c));
+    const warnings = [];
+    if (required.has('mfa') && !user.mfaRegistered) warnings.push('Brugeren har IKKE registreret MFA – login vil blive afvist');
+    if (required.has('compliantDevice') && !sc.deviceCompliant) warnings.push('Enheden er IKKE kompatibel (Intune) – adgang vil blive nægtet');
+    if (warnings.length) {
+      overall = { type:'blocked', title:'Adgang nægtet (krav ikke opfyldt)', detail:warnings.join(' · '), controls:[] };
+    } else if (required.size > 0) {
+      overall = { type:'granted_controls', title:'Adgang tilladt med kontroller', detail:'Brugeren skal opfylde følgende krav:', controls:[...required] };
+    } else {
+      overall = { type:'granted', title:'Adgang tilladt', detail:'Ingen aktiverede politikker kræver yderligere kontrol.', controls:[] };
+    }
+  }
+
+  // Log entry
+  const entry = { id:`log-${Date.now()}`, ts:new Date(), sc, results, overall };
+  db.signInLogs.unshift(entry);
+  if (db.signInLogs.length > 100) db.signInLogs.pop();
+  updateLogBadge();
+
+  return { results, overall, reportOnly, enabled };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════════════════════
+const PAGE_LABELS = { overview:'Dashboard', policies:'Politikker', whatif:'What If', locations:'Named Locations', users:'Brugere', groups:'Grupper', logs:'Sign-in logs' };
+
+function navigate(page) {
+  db.currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === page);
+  });
+  document.getElementById('crumb-page').textContent = PAGE_LABELS[page] || page;
+  renderPage();
+}
+
+function renderPage() {
+  const el = document.getElementById('content');
+  switch(db.currentPage) {
+    case 'overview':  el.innerHTML = renderOverview(); break;
+    case 'policies':  el.innerHTML = renderPolicies(); break;
+    case 'whatif':    el.innerHTML = renderWhatIf(); break;
+    case 'locations': el.innerHTML = renderLocations(); break;
+    case 'users':     el.innerHTML = renderUsers(); break;
+    case 'groups':    el.innerHTML = renderGroups(); break;
+    case 'logs':      el.innerHTML = renderLogs(); break;
+  }
+  attachPageEvents();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// OVERVIEW
+// ════════════════════════════════════════════════════════════════════════════
+function renderOverview() {
+  const u = findUser(db.currentUserId);
+  const enabled  = db.policies.filter(p=>p.state==='enabled').length;
+  const report   = db.policies.filter(p=>p.state==='reportOnly').length;
+  const disabled = db.policies.filter(p=>p.state==='disabled').length;
+
+  // Evaluate applicable policies for current user (generic scenario)
+  const sc = { userId:db.currentUserId, appId:'app-all', locationId:'loc-dk', devicePlatform:'windows', clientApp:'browser', deviceCompliant:u.deviceCompliant, signInRisk:'none' };
+  const applicable = db.policies.filter(p=>p.state!=='disabled' && evaluatePolicy(p,sc).applies);
+
+  return `
+  <div class="page-header">
+    <div class="page-title">Dashboard</div>
+    <div class="page-subtitle">Overblik over Conditional Access i Contoso-lejeren</div>
+  </div>
+  <div class="stat-grid">
+    <div class="stat-tile">
+      <div class="stat-value" style="color:var(--ok)">${enabled}</div>
+      <div class="stat-label"><span class="stat-dot" style="background:var(--ok)"></span>Aktiverede politikker</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-value" style="color:var(--info)">${report}</div>
+      <div class="stat-label"><span class="stat-dot" style="background:var(--info)"></span>Report-only</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-value" style="color:var(--t3)">${disabled}</div>
+      <div class="stat-label"><span class="stat-dot" style="background:var(--t3)"></span>Deaktiverede</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-value">${db.users.length}</div>
+      <div class="stat-label">Testbrugere</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-value">${db.signInLogs.length}</div>
+      <div class="stat-label">What If-simuleringer</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--accent)"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zm-5 6a5 5 0 0110 0H3z"/></svg>
+      <div class="card-title">Brugerperspektiv: <strong>${u.name}</strong></div>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+        <span class="badge ${u.mfaRegistered?'badge-grant':'badge-block'}">${u.mfaRegistered?'MFA registreret':'MFA ikke registreret'}</span>
+        <span class="badge ${u.deviceCompliant?'badge-grant':'badge-mfa'}">${u.deviceCompliant?'Kompatibel enhed':'Ikke-kompatibel enhed'}</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="text-muted text-sm" style="margin-bottom:12px">Politikker der gælder for <strong>${u.name}</strong> ved login fra Danmark via browser med ingen risiko:</p>
+      ${applicable.length === 0
+        ? '<div class="empty-state" style="padding:20px"><div class="empty-sub">Ingen politikker gælder for denne bruger under disse betingelser</div></div>'
+        : `<div class="table-wrap"><table>
+            <thead><tr><th>Politik</th><th>Status</th><th>Krav</th></tr></thead>
+            <tbody>${applicable.map(p=>{
+              const ev = evaluatePolicy(p,sc);
+              return `<tr>
+                <td class="td-name">${p.name}</td>
+                <td>${stateBadge(p.state)}</td>
+                <td>${ev.grantResult ? grantBadge(ev.grantResult) : ''}</td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table></div>`
+      }
+      <div class="mt-3">
+        <button class="btn btn-primary" onclick="navigate('whatif')">
+          <svg viewBox="0 0 16 16"><path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm1 12H7V7h2v5zm0-7H7V3h2v2z"/></svg>
+          Åbn What If-værktøj
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--accent)"><path d="M2 2h12v2H2V2zm0 4h12v2H2V6zm0 4h7v2H2v-2zm0 4h7v2H2v-2zm9-4h5v6h-5v-6z"/></svg>
+      <div class="card-title">Alle politikker</div>
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="navigate('policies')">Vis alle</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Navn</th><th>Status</th><th>Brugere</th><th>Apps</th><th>Grant-kontrol</th></tr></thead>
+        <tbody>${db.policies.map(p=>`
+          <tr class="clickable" onclick="openPolicyPanel('${p.id}')">
+            <td class="td-name">${p.name}</td>
+            <td>${stateBadge(p.state)}</td>
+            <td>${usersLabel(p.users)}</td>
+            <td>${appsLabel(p.apps)}</td>
+            <td>${grantLabel(p.grant)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// POLICIES
+// ════════════════════════════════════════════════════════════════════════════
+function renderPolicies() {
+  return `
+  <div class="page-header">
+    <div class="page-title">Conditional Access – Politikker</div>
+    <div class="page-subtitle">Administrér og simulér adgangspolitikker</div>
+  </div>
+  <div class="cmd-bar">
+    <button class="btn btn-primary" onclick="openPolicyPanel('new')">
+      <svg viewBox="0 0 16 16"><path d="M9 7V1H7v6H1v2h6v6h2V9h6V7H9z"/></svg>
+      Ny politik
+    </button>
+    <div class="cmd-bar-right">
+      <span class="text-muted text-sm">${db.policies.length} politikker</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Navn</th><th>Status</th><th>Brugere</th><th>Målressourcer</th><th>Betingelser</th><th>Grant-kontrol</th></tr></thead>
+        <tbody>${db.policies.length ? db.policies.map(p=>`
+          <tr class="clickable" onclick="openPolicyPanel('${p.id}')">
+            <td class="td-name">${p.name}</td>
+            <td>${stateBadge(p.state)}</td>
+            <td style="max-width:160px">${usersLabel(p.users)}</td>
+            <td>${appsLabel(p.apps)}</td>
+            <td>${conditionsLabel(p.conditions)}</td>
+            <td>${grantLabel(p.grant)}</td>
+          </tr>`).join('')
+        : '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">Ingen politikker</div></div></td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// WHAT IF
+// ════════════════════════════════════════════════════════════════════════════
+let whatIfResult = null;
+
+function renderWhatIf() {
+  const u = findUser(db.currentUserId);
+  return `
+  <div class="page-header">
+    <div class="page-title">What If – Simuleringværktøj</div>
+    <div class="page-subtitle">Simulér, hvilke politikker der ville gælde ved et givet loginscenarie</div>
+  </div>
+  <div class="whatif-layout">
+    <div class="whatif-form-card">
+      <div class="card-header">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--accent)"><path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm1 12H7V7h2v5zm0-7H7V3h2v2z"/></svg>
+        <div class="card-title">Scenarie-parametre</div>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Bruger</label>
+          <select class="form-select" id="wi-user">
+            ${db.users.map(u=>`<option value="${u.id}" ${u.id===db.currentUserId?'selected':''}>${u.name} (${u.role})</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cloud-app</label>
+          <select class="form-select" id="wi-app">
+            ${db.apps.map(a=>`<option value="${a.id}">${a.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lokation</label>
+          <select class="form-select" id="wi-location">
+            ${db.namedLocations.map(l=>`<option value="${l.id}">${l.name}${l.trusted?' (Betroet)':''}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Enhedsplatform</label>
+          <select class="form-select" id="wi-platform">
+            <option value="windows">Windows</option>
+            <option value="ios">iOS</option>
+            <option value="android">Android</option>
+            <option value="macos">macOS</option>
+            <option value="linux">Linux</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Klientapp-type</label>
+          <select class="form-select" id="wi-clientapp">
+            <option value="browser">Browser</option>
+            <option value="mobileDesktop">Mobile/Desktop-apps (moderne)</option>
+            <option value="exchangeActivesync">Exchange ActiveSync</option>
+            <option value="other">Andre klienter (ældre protokoller)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Enhedsstatus</label>
+          <select class="form-select" id="wi-compliant">
+            <option value="false">Ikke kompatibel (ingen Intune)</option>
+            <option value="true">Kompatibel enhed (Intune-tilmeldt)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sign-in risiko <span class="form-label-hint">(kræver Entra P2)</span></label>
+          <select class="form-select" id="wi-risk">
+            <option value="none">Ingen</option>
+            <option value="low">Lav</option>
+            <option value="medium">Medium</option>
+            <option value="high">Høj</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="doWhatIf()">
+          <svg viewBox="0 0 16 16"><path d="M6 1l9 7-9 7V1z"/></svg>
+          Kør simulation
+        </button>
+      </div>
+    </div>
+
+    <div class="whatif-results" id="wi-results">
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">Klar til simulering</div>
+        <div class="empty-sub">Vælg brugere og parametre, klik derefter på "Kør simulation"</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function doWhatIf() {
+  const sc = {
+    userId:     document.getElementById('wi-user').value,
+    appId:      document.getElementById('wi-app').value,
+    locationId: document.getElementById('wi-location').value,
+    devicePlatform: document.getElementById('wi-platform').value,
+    clientApp:  document.getElementById('wi-clientapp').value,
+    deviceCompliant: document.getElementById('wi-compliant').value === 'true',
+    signInRisk: document.getElementById('wi-risk').value,
+  };
+
+  const { results, overall, reportOnly } = runWhatIf(sc);
+  whatIfResult = { sc, results, overall, reportOnly };
+
+  const user = findUser(sc.userId);
+  const app  = findApp(sc.appId);
+  const loc  = findLocation(sc.locationId);
+
+  const verdictClass = overall.type === 'granted' ? 'verdict-granted'
+                     : overall.type === 'granted_controls' ? 'verdict-granted'
+                     : 'verdict-blocked';
+  const verdictIcon  = overall.type.startsWith('granted') ? '✅' : '🚫';
+
+  const allResults = results;
+  const enabledApply = allResults.filter(r=>r.applies && r.state==='enabled');
+  const reportApply  = allResults.filter(r=>r.applies && r.state==='reportOnly');
+  const notApply     = allResults.filter(r=>!r.applies && r.state!=='disabled');
+  const disabled     = allResults.filter(r=>r.state==='disabled');
+
+  let html = `
+    <div class="verdict ${verdictClass}">
+      <div class="verdict-icon">${verdictIcon}</div>
+      <div>
+        <div class="verdict-title">${overall.title}</div>
+        <div class="verdict-detail">${overall.detail}</div>
+        ${overall.controls.length ? `<div class="verdict-controls">${overall.controls.map(c=>`<span class="badge badge-mfa">${CONTROL_LABELS[c]}</span>`).join('')}</div>` : ''}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" style="flex-wrap:wrap;gap:6px">
+        <div class="card-title">Scenarie</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-left:auto">
+          <span class="badge badge-grant">${user.name}</span>
+          <span class="badge badge-mfa">${app?.name}</span>
+          <span class="badge">${loc?.name}</span>
+          <span class="badge">${PLATFORM_LABELS[sc.devicePlatform]}</span>
+          <span class="badge">${CLIENT_APP_LABELS[sc.clientApp]||sc.clientApp}</span>
+          ${sc.signInRisk!=='none'?`<span class="badge badge-block">Risiko: ${RISK_LABELS[sc.signInRisk]}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+
+  // Helper to render an eval card
+  function evalCard(r) {
+    const isBadge = r.applies
+      ? (r.state==='reportOnly' ? '<span class="eval-applies-badge eval-applies-rep">Gælder (Report-only)</span>'
+                                : '<span class="eval-applies-badge eval-applies-yes">Gælder</span>')
+      : '<span class="eval-applies-badge eval-applies-no">Gælder ikke</span>';
+    const badge = stateBadge(r.state);
+    const cid = 'ec-'+r.policyId+'-'+Date.now();
+    let steps = r.steps.map(s=>`
+      <div class="eval-step">
+        <span class="step-icon">${s.ok?'✔️':'✖️'}</span>
+        <span class="step-label">${s.label}</span>
+        <span class="step-detail">${s.detail}</span>
+      </div>`).join('');
+    if (!r.applies && r.state!=='disabled') {
+      steps += `<div class="eval-step">
+        <span class="step-icon">⛔</span>
+        <span class="step-label">Årsag</span>
+        <span class="step-detail" style="color:var(--err)">${r.reason}</span>
+      </div>`;
+    }
+    const resultRow = r.applies && r.grantResult ? `
+      <div class="step-result">
+        <span>${r.grantResult.type==='block'?'🚫':'🔐'}</span>
+        <span>${r.grantResult.label}</span>
+      </div>` : '';
+
+    return `<div class="eval-card">
+      <div class="eval-header" onclick="toggleEval('${cid}')">
+        <span class="eval-chevron" id="chev-${cid}">▶</span>
+        <span class="eval-policy-name">${r.name}</span>
+        ${badge}
+        ${isBadge}
+      </div>
+      <div class="eval-body" id="${cid}">
+        ${steps}
+        ${resultRow}
+      </div>
+    </div>`;
+  }
+
+  if (enabledApply.length) {
+    html += `<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t2);padding:4px 0">Aktiverede politikker der gælder (${enabledApply.length})</div>`;
+    html += enabledApply.map(evalCard).join('');
+  }
+  if (reportApply.length) {
+    html += `<div class="info-box mt-2"><span class="info-icon">ℹ️</span><div><strong>Report-only:</strong> Følgende politikker ville gælde, men blokerer ikke – de logger kun.</div></div>`;
+    html += reportApply.map(evalCard).join('');
+  }
+  if (notApply.length) {
+    html += `<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t2);padding:4px 0;margin-top:4px">Gælder ikke (${notApply.length})</div>`;
+    html += notApply.map(evalCard).join('');
+  }
+  if (disabled.length) {
+    html += `<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t2);padding:4px 0;margin-top:4px">Deaktiverede (${disabled.length})</div>`;
+    html += disabled.map(evalCard).join('');
+  }
+
+  document.getElementById('wi-results').innerHTML = html;
+}
+
+function toggleEval(id) {
+  const body = document.getElementById(id);
+  const chev = document.getElementById('chev-'+id);
+  const open = body.classList.toggle('open');
+  if (chev) chev.classList.toggle('open', open);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LOCATIONS
+// ════════════════════════════════════════════════════════════════════════════
+function renderLocations() {
+  return `
+  <div class="page-header">
+    <div class="page-title">Named Locations</div>
+    <div class="page-subtitle">IP-baserede og lande-baserede lokationer brugt i betingelser</div>
+  </div>
+  <div class="cmd-bar">
+    <button class="btn btn-primary" onclick="openLocationPanel('new')">
+      <svg viewBox="0 0 16 16"><path d="M9 7V1H7v6H1v2h6v6h2V9h6V7H9z"/></svg>
+      Ny lokation
+    </button>
+    <div class="cmd-bar-right">
+      <span class="text-muted text-sm">${db.namedLocations.length} lokationer</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Navn</th><th>Type</th><th>Betroet</th><th>Detaljer</th><th></th></tr></thead>
+        <tbody>${db.namedLocations.map(l=>`
+          <tr>
+            <td class="td-name">📍 ${l.name}</td>
+            <td><span class="badge badge-mfa">${l.type==='ip'?'IP-område':l.type==='country'?'Lande':'Dynamisk'}</span></td>
+            <td>${l.trusted?'<span class="badge badge-grant">✓ Betroet</span>':'<span class="badge badge-block">Ikke betroet</span>'}</td>
+            <td class="text-muted text-sm">${l.details||'—'}</td>
+            <td><button class="btn btn-secondary btn-sm" onclick="openLocationPanel('${l.id}')">Rediger</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="info-box mt-3">
+    <span class="info-icon">💡</span>
+    <div><strong>Betroede lokationer</strong> bruges typisk til at ekskludere kendte virksomhedslokationer fra MFA-krav, eller til at blokere adgang fra ikke-betroede steder. En politik kan inkludere "Alle lokationer" og ekskludere betroede lokationer for at ramme logins udefra.</div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// USERS
+// ════════════════════════════════════════════════════════════════════════════
+function renderUsers() {
+  return `
+  <div class="page-header">
+    <div class="page-title">Brugere</div>
+    <div class="page-subtitle">Testbrugere og gruppemedlemskaber i Contoso-lejeren</div>
+  </div>
+  <div class="cmd-bar">
+    <button class="btn btn-primary" onclick="openUserPanel('new')">
+      <svg viewBox="0 0 16 16"><path d="M9 7V1H7v6H1v2h6v6h2V9h6V7H9z"/></svg>
+      Ny bruger
+    </button>
+    <div class="cmd-bar-right">
+      <span class="text-muted text-sm">${db.users.length} brugere</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Navn</th><th>Brugertype</th><th>Afdeling / Rolle</th><th>Grupper</th><th>MFA</th><th>Enhed</th><th></th></tr></thead>
+        <tbody>${db.users.map(u=>`
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px">
+                <div class="user-avatar" style="background:${avatarColor(u.name)}">${initials(u.name)}</div>
+                <div>
+                  <div class="td-name">${u.name} ${u.isAdmin?'<span class="badge badge-mfa" style="font-size:10px">Admin</span>':''} ${u.isBreakGlass?'<span class="badge" style="font-size:10px;background:var(--warn-bg);color:var(--warn)">⚠ Break-glass</span>':''}</div>
+                  <div class="text-muted text-sm">${u.email}</div>
+                </div>
+              </div>
+            </td>
+            <td>${u.guestUser?'<span class="badge badge-block">Gæst</span>':'<span class="badge badge-grant">Intern</span>'}</td>
+            <td>
+              <div class="td-name">${u.dept}</div>
+              <div class="text-muted text-sm">${u.role}</div>
+            </td>
+            <td style="max-width:200px">
+              <div style="display:flex;flex-wrap:wrap;gap:4px">
+                ${u.groups.map(gid=>{const g=findGroup(gid);return g?`<span class="badge" style="font-size:11px">${g.name}</span>`:''}).join('')}
+              </div>
+            </td>
+            <td>${u.mfaRegistered?'<span class="badge badge-grant">✓ Registreret</span>':'<span class="badge badge-block">✗ Ikke registreret</span>'}</td>
+            <td>${u.deviceCompliant?'<span class="badge badge-grant">Kompatibel</span>':'<span class="badge badge-mfa">Ikke-kompatibel</span>'}</td>
+            <td>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-secondary btn-sm" onclick="simulateAs('${u.id}')">What If</button>
+                <button class="btn btn-secondary btn-sm" onclick="openUserPanel('${u.id}')">Rediger</button>
+              </div>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// GROUPS
+// ════════════════════════════════════════════════════════════════════════════
+function renderGroups() {
+  return `
+  <div class="page-header">
+    <div class="page-title">Grupper</div>
+    <div class="page-subtitle">Sikkerhedsgrupper brugt til at målrette brugere i politikker</div>
+  </div>
+  <div class="cmd-bar">
+    <button class="btn btn-primary" onclick="openGroupPanel('new')">
+      <svg viewBox="0 0 16 16"><path d="M9 7V1H7v6H1v2h6v6h2V9h6V7H9z"/></svg>
+      Ny gruppe
+    </button>
+    <div class="cmd-bar-right">
+      <span class="text-muted text-sm">${db.groups.length} grupper</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Navn</th><th>Beskrivelse</th><th>Medlemmer</th><th></th></tr></thead>
+        <tbody>${db.groups.map(g=>{
+          const memberCount = db.users.filter(u=>u.groups.includes(g.id)).length;
+          return `
+          <tr class="clickable" onclick="openGroupPanel('${g.id}')">
+            <td class="td-name">${g.name}</td>
+            <td class="text-muted text-sm">${g.desc||'—'}</td>
+            <td>${memberCount}</td>
+            <td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openGroupPanel('${g.id}')">Rediger</button></td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="info-box mt-3">
+    <span class="info-icon">💡</span>
+    <div>Grupper kan bruges til at målrette Conditional Access-politikker mod bestemte brugere via "Brugeromfang". Opret en ny gruppe her, og tilføj derefter medlemmer via en brugers redigeringspanel under "Brugere".</div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SIGN-IN LOGS
+// ════════════════════════════════════════════════════════════════════════════
+function renderLogs() {
+  return `
+  <div class="page-header">
+    <div class="page-title">Sign-in Logs</div>
+    <div class="page-subtitle">Simulerede loginlogposter genereret af What If-simuleringer</div>
+  </div>
+  ${db.signInLogs.length === 0 ? `
+    <div class="empty-state">
+      <div class="empty-icon">📊</div>
+      <div class="empty-title">Ingen logposter endnu</div>
+      <div class="empty-sub">Kør What If-simuleringer – de vises her som loginlogposter</div>
+      <div class="mt-3"><button class="btn btn-primary" onclick="navigate('whatif')">Åbn What If</button></div>
+    </div>` : `
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Loginlogposter</div>
+      <div style="margin-left:auto">
+        <button class="btn btn-secondary btn-sm" onclick="clearLogs()">Ryd logs</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tidspunkt</th><th>Bruger</th><th>App</th><th>Lokation</th><th>Enhed</th><th>Risiko</th><th>Resultat</th><th>Politikker (gælder)</th></tr></thead>
+        <tbody>${db.signInLogs.map(entry=>{
+          const u=findUser(entry.sc.userId);
+          const a=findApp(entry.sc.appId);
+          const l=findLocation(entry.sc.locationId);
+          const applied=entry.results.filter(r=>r.applies&&r.state==='enabled').length;
+          const rBadge = entry.overall.type.startsWith('granted')
+            ? `<span class="badge badge-grant">${entry.overall.type==='granted_controls'?'Tilladt (krav)':'Tilladt'}</span>`
+            : `<span class="badge badge-block">Blokeret</span>`;
+          return `<tr>
+            <td class="log-time">${fmtTime(entry.ts)}</td>
+            <td><div style="display:flex;align-items:center;gap:6px"><div class="user-avatar" style="background:${avatarColor(u.name)};width:22px;height:22px;font-size:9px">${initials(u.name)}</div>${u.name}</div></td>
+            <td class="text-sm">${a?.name||entry.sc.appId}</td>
+            <td class="text-sm">${l?.name||entry.sc.locationId}</td>
+            <td class="text-sm">${PLATFORM_LABELS[entry.sc.devicePlatform]}</td>
+            <td><span class="badge ${entry.sc.signInRisk==='high'?'badge-block':entry.sc.signInRisk==='none'?'':'badge-mfa'}">${RISK_LABELS[entry.sc.signInRisk]}</span></td>
+            <td>${rBadge}</td>
+            <td style="font-variant-numeric:tabular-nums">${applied} / ${entry.results.filter(r=>r.state!=='disabled').length}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`}`;
+}
+
+function clearLogs() { db.signInLogs = []; updateLogBadge(); renderPage(); }
+function fmtTime(d) {
+  return d.toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) + ' ' +
+         d.toLocaleDateString('da-DK',{day:'2-digit',month:'2-digit'});
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// POLICY PANEL
+// ════════════════════════════════════════════════════════════════════════════
+let editingPolicyId = null;
+let editingPolicy = null;
+let _panelMode = 'policy'; // 'policy' | 'user' | 'location' | 'group'
+function panelSave()   { _panelMode==='user' ? saveUser() : _panelMode==='location' ? saveLocation() : _panelMode==='group' ? saveGroup() : savePolicy(); }
+function panelDelete() { _panelMode==='user' ? deleteUser() : _panelMode==='location' ? deleteLocation() : _panelMode==='group' ? deleteGroup() : deletePolicy(); }
+
+function openPolicyPanel(id) {
+  _panelMode = 'policy';
+  editingPolicyId = id;
+  if (id === 'new') {
+    editingPolicy = {
+      id: 'pol-'+db.nextPolicyId,
+      name: 'Ny Conditional Access-politik',
+      state: 'disabled',
+      users:{ includeAll:true, includeGroups:[], includeUsers:[], excludeGroups:[], excludeUsers:[] },
+      apps:{ includeAll:true, includeApps:[], excludeApps:[] },
+      conditions:{
+        locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]},
+        devicePlatforms:{enabled:false,platforms:[]},
+        clientApps:{enabled:false,apps:[]},
+        signInRisk:{enabled:false,levels:[]}
+      },
+      grant:{ operator:'OR', controls:[] }
+    };
+    document.getElementById('panel-title').textContent = 'Ny politik';
+    document.getElementById('panel-delete-btn').style.display = 'none';
+  } else {
+    const p = db.policies.find(p=>p.id===id);
+    editingPolicy = JSON.parse(JSON.stringify(p));
+    document.getElementById('panel-title').textContent = p.name;
+    document.getElementById('panel-delete-btn').style.display = 'inline-flex';
+  }
+  renderPanelBody();
+  document.getElementById('policy-panel').classList.add('open');
+  document.getElementById('panel-overlay').classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('policy-panel').classList.remove('open');
+  document.getElementById('panel-overlay').classList.remove('open');
+  editingPolicyId = null; editingPolicy = null;
+  editingUserId = null;   editingUser = null;
+  editingLocationId = null; editingLocation = null;
+  editingGroupId = null;  editingGroup = null;
+  // Nulstil evt. halvt-bekræftet sletning
+  clearTimeout(_confirmTimer);
+  _confirmPending = null;
+  const btn = document.getElementById('panel-delete-btn');
+  if (btn) { btn.textContent = 'Slet'; btn.style.background = ''; }
+}
+
+function renderPanelBody() {
+  const p = editingPolicy;
+  const body = document.getElementById('panel-body');
+  body.innerHTML = `
+    <!-- Name -->
+    <div class="panel-section">
+      <div class="panel-section-title">Navn &amp; Status</div>
+      <div class="form-group">
+        <label class="form-label">Politiknavn</label>
+        <input type="text" class="form-input" id="pe-name" value="${p.name}" oninput="editingPolicy.name=this.value;document.getElementById('panel-title').textContent=this.value">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Aktiveringstilstand</label>
+        <div class="state-toggle">
+          <button class="state-btn ${p.state==='enabled'?'active-enabled':''}" onclick="setEditState('enabled')">✓ Aktiveret</button>
+          <button class="state-btn ${p.state==='reportOnly'?'active-report':''}" onclick="setEditState('reportOnly')">📊 Report-only</button>
+          <button class="state-btn ${p.state==='disabled'?'active-disabled':''}" onclick="setEditState('disabled')">Deaktiveret</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Users -->
+    <div class="panel-section">
+      <div class="panel-section-title">Tildeling – Brugere</div>
+      <div class="form-group">
+        <label class="form-label">Inkluder</label>
+        <div class="radio-group">
+          <label class="radio-item ${p.users.includeAll?'selected':''}">
+            <input type="radio" name="u-include" value="all" ${p.users.includeAll?'checked':''} onchange="setUserInclude('all')">
+            <label>Alle brugere <small>Gælder for alle konti i lejeren</small></label>
+          </label>
+          <label class="radio-item ${!p.users.includeAll?'selected':''}">
+            <input type="radio" name="u-include" value="groups" ${!p.users.includeAll?'checked':''} onchange="setUserInclude('groups')">
+            <label>Udvalgte grupper/brugere <small>Specificér hvilke grupper eller brugere der er i omfang</small></label>
+          </label>
+        </div>
+        ${!p.users.includeAll ? `<div class="mt-2">
+          <select class="form-select" onchange="addGroup('include', this)">
+            <option value="">+ Tilføj gruppe eller bruger...</option>
+            ${db.groups.filter(g=>!p.users.includeGroups.includes(g.id)).map(g=>`<option value="${g.id}">${g.name}</option>`).join('')}
+            ${db.users.filter(u=>!p.users.includeUsers.includes(u.id)).map(u=>`<option value="user:${u.id}">${u.name} (bruger)</option>`).join('')}
+          </select>
+          <div class="tag-list">
+            ${p.users.includeGroups.map(gid=>{const g=findGroup(gid);return g?`<span class="tag-pill">${g.name} <button onclick="removeGroup('include','${gid}')">×</button></span>`:''}).join('')}
+            ${p.users.includeUsers.map(uid=>{const u=findUser(uid);return u?`<span class="tag-pill">${u.name} <button onclick="removeUser('include','${uid}')">×</button></span>`:''}).join('')}
+          </div>
+        </div>` : ''}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ekskluder</label>
+        <select class="form-select" onchange="addGroup('exclude', this)">
+          <option value="">+ Ekskludér gruppe/bruger...</option>
+          ${db.groups.filter(g=>!p.users.excludeGroups.includes(g.id)).map(g=>`<option value="${g.id}">${g.name}</option>`).join('')}
+          ${db.users.filter(u=>!p.users.excludeUsers.includes(u.id)).map(u=>`<option value="user:${u.id}">${u.name} (bruger)</option>`).join('')}
+        </select>
+        <div class="tag-list">
+          ${p.users.excludeGroups.map(gid=>{const g=findGroup(gid);return g?`<span class="tag-pill" style="background:var(--err-bg);color:var(--err);border-color:var(--err)">${g.name} <button onclick="removeGroup('exclude','${gid}')" style="color:var(--err)">×</button></span>`:''}).join('')}
+          ${p.users.excludeUsers.map(uid=>{const u=findUser(uid);return u?`<span class="tag-pill" style="background:var(--err-bg);color:var(--err);border-color:var(--err)">${u.name} <button onclick="removeUser('exclude','${uid}')" style="color:var(--err)">×</button></span>`:''}).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- Apps -->
+    <div class="panel-section">
+      <div class="panel-section-title">Målressourcer – Apps</div>
+      <div class="radio-group">
+        <label class="radio-item ${p.apps.includeAll?'selected':''}">
+          <input type="radio" name="a-include" value="all" ${p.apps.includeAll?'checked':''} onchange="setAppInclude('all')">
+          <label>Alle cloud-apps</label>
+        </label>
+        <label class="radio-item ${!p.apps.includeAll?'selected':''}">
+          <input type="radio" name="a-include" value="select" ${!p.apps.includeAll?'checked':''} onchange="setAppInclude('select')">
+          <label>Udvalgte apps</label>
+        </label>
+      </div>
+      ${!p.apps.includeAll ? `<div class="mt-2">
+        <select class="form-select" onchange="addApp(this)">
+          <option value="">+ Tilføj app...</option>
+          ${db.apps.filter(a=>a.id!=='app-all'&&!p.apps.includeApps.includes(a.id)).map(a=>`<option value="${a.id}">${a.name}</option>`).join('')}
+        </select>
+        <div class="tag-list">${p.apps.includeApps.map(aid=>{const a=findApp(aid);return a?`<span class="tag-pill">${a.name} <button onclick="removeApp('${aid}')">×</button></span>`:''}).join('')}</div>
+      </div>` : ''}
+    </div>
+
+    <!-- Conditions -->
+    <div class="panel-section">
+      <div class="panel-section-title">Betingelser</div>
+
+      <div class="cond-section">
+        <label class="cond-toggle-label">
+          <input type="checkbox" ${p.conditions.signInRisk.enabled?'checked':''} onchange="toggleCond('signInRisk',this.checked)">
+          Sign-in risiko
+        </label>
+        ${p.conditions.signInRisk.enabled ? `<div class="sub-options check-group">
+          ${['high','medium','low'].map(level=>`
+            <label class="check-item ${p.conditions.signInRisk.levels.includes(level)?'selected':''}">
+              <input type="checkbox" ${p.conditions.signInRisk.levels.includes(level)?'checked':''} onchange="toggleRisk('${level}',this.checked)">
+              <label>${RISK_LABELS[level]}<small>Risikoniveau ${RISK_LABELS[level].toLowerCase()}</small></label>
+            </label>`).join('')}
+        </div>` : ''}
+      </div>
+
+      <div class="cond-section">
+        <label class="cond-toggle-label">
+          <input type="checkbox" ${p.conditions.clientApps.enabled?'checked':''} onchange="toggleCond('clientApps',this.checked)">
+          Klientapps (apptype)
+        </label>
+        ${p.conditions.clientApps.enabled ? `<div class="sub-options check-group">
+          ${Object.entries(CLIENT_APP_LABELS).map(([val,label])=>`
+            <label class="check-item ${p.conditions.clientApps.apps.includes(val)?'selected':''}">
+              <input type="checkbox" ${p.conditions.clientApps.apps.includes(val)?'checked':''} onchange="toggleClientApp('${val}',this.checked)">
+              <label>${label}</label>
+            </label>`).join('')}
+        </div>` : ''}
+      </div>
+
+      <div class="cond-section">
+        <label class="cond-toggle-label">
+          <input type="checkbox" ${p.conditions.devicePlatforms.enabled?'checked':''} onchange="toggleCond('devicePlatforms',this.checked)">
+          Enhedsplatforme
+        </label>
+        ${p.conditions.devicePlatforms.enabled ? `<div class="sub-options check-group">
+          ${Object.entries(PLATFORM_LABELS).map(([val,label])=>`
+            <label class="check-item ${p.conditions.devicePlatforms.platforms.includes(val)?'selected':''}">
+              <input type="checkbox" ${p.conditions.devicePlatforms.platforms.includes(val)?'checked':''} onchange="togglePlatform('${val}',this.checked)">
+              <label>${label}</label>
+            </label>`).join('')}
+        </div>` : ''}
+      </div>
+
+      <div class="cond-section">
+        <label class="cond-toggle-label">
+          <input type="checkbox" ${p.conditions.locations.enabled?'checked':''} onchange="toggleCond('locations',this.checked)">
+          Netværkslokationer
+        </label>
+        ${p.conditions.locations.enabled ? `<div class="sub-options">
+          <div class="form-group">
+            <label class="form-label">Inkluder</label>
+            <div class="radio-group">
+              <label class="radio-item ${p.conditions.locations.includeAll?'selected':''}">
+                <input type="radio" name="loc-inc" value="all" ${p.conditions.locations.includeAll?'checked':''} onchange="setLocInclude('all')">
+                <label>Alle lokationer</label>
+              </label>
+              <label class="radio-item ${!p.conditions.locations.includeAll?'selected':''}">
+                <input type="radio" name="loc-inc" value="select" ${!p.conditions.locations.includeAll?'checked':''} onchange="setLocInclude('select')">
+                <label>Udvalgte lokationer</label>
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ekskluder</label>
+            <select class="form-select" onchange="addExcludedLoc(this)">
+              <option value="">+ Ekskludér lokation...</option>
+              ${db.namedLocations.filter(l=>!p.conditions.locations.excludeLocations.includes(l.id)).map(l=>`<option value="${l.id}">${l.name}</option>`).join('')}
+            </select>
+            <div class="tag-list">${p.conditions.locations.excludeLocations.map(lid=>{const l=findLocation(lid);return l?`<span class="tag-pill" style="background:var(--err-bg);color:var(--err);border-color:var(--err)">${l.name} <button onclick="removeExcludedLoc('${lid}')" style="color:var(--err)">×</button></span>`:''}).join('')}</div>
+          </div>
+        </div>` : ''}
+      </div>
+    </div>
+
+    <!-- Grant -->
+    <div class="panel-section">
+      <div class="panel-section-title">Adgangskontrol (Grant)</div>
+      <div class="check-group">
+        <label class="check-item ${editingPolicy.grant.controls.includes('block')?'selected':''}" style="${editingPolicy.grant.controls.includes('block')?'border-color:var(--err)':''}">
+          <input type="checkbox" ${editingPolicy.grant.controls.includes('block')?'checked':''} onchange="toggleGrant('block',this.checked)">
+          <label>🚫 Blokér adgang <small>Ingen adgang uanset øvrige krav</small></label>
+        </label>
+        ${['mfa','compliantDevice','hybridJoin','approvedApp'].map(ctrl=>`
+        <label class="check-item ${editingPolicy.grant.controls.includes(ctrl)&&!editingPolicy.grant.controls.includes('block')?'selected':''}">
+          <input type="checkbox" ${editingPolicy.grant.controls.includes(ctrl)?'checked':''} ${editingPolicy.grant.controls.includes('block')?'disabled':''} onchange="toggleGrant('${ctrl}',this.checked)">
+          <label>${CONTROL_LABELS[ctrl]}</label>
+        </label>`).join('')}
+      </div>
+      ${editingPolicy.grant.controls.filter(c=>c!=='block').length>1 ? `
+      <div class="mt-2">
+        <label class="form-label">Krav til opfyldelse</label>
+        <div class="radio-group">
+          <label class="radio-item ${editingPolicy.grant.operator==='OR'?'selected':''}">
+            <input type="radio" name="grant-op" value="OR" ${editingPolicy.grant.operator==='OR'?'checked':''} onchange="editingPolicy.grant.operator='OR'">
+            <label>Ét krav er nok (OR)</label>
+          </label>
+          <label class="radio-item ${editingPolicy.grant.operator==='AND'?'selected':''}">
+            <input type="radio" name="grant-op" value="AND" ${editingPolicy.grant.operator==='AND'?'checked':''} onchange="editingPolicy.grant.operator='AND'">
+            <label>Alle krav skal opfyldes (AND)</label>
+          </label>
+        </div>
+      </div>` : ''}
+    </div>
+  `;
+}
+
+// Panel mutation helpers
+function setEditState(s) { editingPolicy.state=s; renderPanelBody(); }
+function setUserInclude(v) { editingPolicy.users.includeAll=(v==='all'); renderPanelBody(); }
+function setAppInclude(v) { editingPolicy.apps.includeAll=(v==='all'); renderPanelBody(); }
+function setLocInclude(v) { editingPolicy.conditions.locations.includeAll=(v==='all'); renderPanelBody(); }
+
+function removeGroup(type, id) {
+  if(type==='include') editingPolicy.users.includeGroups = editingPolicy.users.includeGroups.filter(g=>g!==id);
+  if(type==='exclude') editingPolicy.users.excludeGroups = editingPolicy.users.excludeGroups.filter(g=>g!==id);
+  renderPanelBody();
+}
+function removeUser(type, id) {
+  if(type==='include') editingPolicy.users.includeUsers = editingPolicy.users.includeUsers.filter(u=>u!==id);
+  if(type==='exclude') editingPolicy.users.excludeUsers = editingPolicy.users.excludeUsers.filter(u=>u!==id);
+  renderPanelBody();
+}
+function addApp(sel) {
+  const v=sel.value; if(!v) return;
+  if(!editingPolicy.apps.includeApps.includes(v)) editingPolicy.apps.includeApps.push(v);
+  renderPanelBody();
+}
+function removeApp(id) {
+  editingPolicy.apps.includeApps = editingPolicy.apps.includeApps.filter(a=>a!==id);
+  renderPanelBody();
+}
+function toggleCond(type, val) { editingPolicy.conditions[type].enabled=val; renderPanelBody(); }
+function toggleRisk(level, val) {
+  if(val) { if(!editingPolicy.conditions.signInRisk.levels.includes(level)) editingPolicy.conditions.signInRisk.levels.push(level); }
+  else editingPolicy.conditions.signInRisk.levels = editingPolicy.conditions.signInRisk.levels.filter(l=>l!==level);
+  renderPanelBody();
+}
+function toggleClientApp(val, checked) {
+  if(checked){ if(!editingPolicy.conditions.clientApps.apps.includes(val)) editingPolicy.conditions.clientApps.apps.push(val); }
+  else editingPolicy.conditions.clientApps.apps = editingPolicy.conditions.clientApps.apps.filter(a=>a!==val);
+  renderPanelBody();
+}
+function togglePlatform(val, checked) {
+  if(checked){ if(!editingPolicy.conditions.devicePlatforms.platforms.includes(val)) editingPolicy.conditions.devicePlatforms.platforms.push(val); }
+  else editingPolicy.conditions.devicePlatforms.platforms = editingPolicy.conditions.devicePlatforms.platforms.filter(p=>p!==val);
+  renderPanelBody();
+}
+function toggleGrant(ctrl, checked) {
+  if(ctrl==='block'){
+    editingPolicy.grant.controls = checked ? ['block'] : [];
+  } else {
+    if(editingPolicy.grant.controls.includes('block')) return;
+    if(checked){ if(!editingPolicy.grant.controls.includes(ctrl)) editingPolicy.grant.controls.push(ctrl); }
+    else editingPolicy.grant.controls = editingPolicy.grant.controls.filter(c=>c!==ctrl);
+  }
+  renderPanelBody();
+}
+function addExcludedLoc(sel) {
+  const v=sel.value; if(!v) return;
+  if(!editingPolicy.conditions.locations.excludeLocations.includes(v)) editingPolicy.conditions.locations.excludeLocations.push(v);
+  renderPanelBody();
+}
+function removeExcludedLoc(id) {
+  editingPolicy.conditions.locations.excludeLocations = editingPolicy.conditions.locations.excludeLocations.filter(l=>l!==id);
+  renderPanelBody();
+}
+
+// Handles mixed "user:xxx" values from either the include or exclude dropdown
+function addGroup(type, sel) {
+  const v = sel.value; if(!v) return;
+  if (v.startsWith('user:')) {
+    const uid = v.slice(5);
+    if(type==='include' && !editingPolicy.users.includeUsers.includes(uid)) editingPolicy.users.includeUsers.push(uid);
+    if(type==='exclude' && !editingPolicy.users.excludeUsers.includes(uid)) editingPolicy.users.excludeUsers.push(uid);
+  } else {
+    if(type==='include' && !editingPolicy.users.includeGroups.includes(v)) editingPolicy.users.includeGroups.push(v);
+    if(type==='exclude' && !editingPolicy.users.excludeGroups.includes(v)) editingPolicy.users.excludeGroups.push(v);
+  }
+  renderPanelBody();
+}
+
+function savePolicy() {
+  const p = editingPolicy;
+  if (!p.name.trim()) { showToast('Politiknavnet må ikke være tomt', 'error'); return; }
+  const idx = db.policies.findIndex(x=>x.id===p.id);
+  if (idx >= 0) {
+    db.policies[idx] = p;
+  } else {
+    db.nextPolicyId++;
+    db.policies.push(p);
+  }
+  updateNavBadge();
+  closePanel();
+  renderPage();
+}
+
+function deletePolicy() {
+  panelConfirm(`Slet politikken "${editingPolicy.name}"?`, () => {
+    db.policies = db.policies.filter(p=>p.id!==editingPolicy.id);
+    updateNavBadge();
+    closePanel();
+    renderPage();
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// USER PANEL
+// ════════════════════════════════════════════════════════════════════════════
+let editingUserId = null;
+let editingUser = null;
+let _nextUserId = 100;
+
+function openUserPanel(id) {
+  _panelMode = 'user';
+  editingUserId = id;
+  if (id === 'new') {
+    editingUser = {
+      id: 'u-custom-' + (_nextUserId++),
+      name: '',
+      email: '',
+      dept: '',
+      role: '',
+      groups: ['g-all'],
+      mfaRegistered: false,
+      deviceCompliant: false,
+      guestUser: false,
+      isAdmin: false,
+    };
+    document.getElementById('panel-title').textContent = 'Ny bruger';
+    document.getElementById('panel-delete-btn').style.display = 'none';
+  } else {
+    const u = db.users.find(u=>u.id===id);
+    editingUser = JSON.parse(JSON.stringify(u));
+    document.getElementById('panel-title').textContent = u.name || 'Rediger bruger';
+    document.getElementById('panel-delete-btn').style.display = 'inline-flex';
+  }
+  renderUserPanelBody();
+  document.getElementById('policy-panel').classList.add('open');
+  document.getElementById('panel-overlay').classList.add('open');
+}
+
+function renderUserPanelBody() {
+  const u = editingUser;
+  document.getElementById('panel-body').innerHTML = `
+    <div class="panel-section">
+      <div class="panel-section-title">Identitet</div>
+      <div class="form-group">
+        <label class="form-label">Fulde navn</label>
+        <input type="text" class="form-input" id="ue-name" value="${u.name}" placeholder="f.eks. Mads Kristensen"
+          oninput="editingUser.name=this.value;document.getElementById('panel-title').textContent=this.value||'Ny bruger'">
+      </div>
+      <div class="form-group">
+        <label class="form-label">E-mailadresse</label>
+        <input type="email" class="form-input" id="ue-email" value="${u.email}" placeholder="f.eks. mads@contoso.com"
+          oninput="editingUser.email=this.value">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Afdeling</label>
+        <input type="text" class="form-input" id="ue-dept" value="${u.dept}" placeholder="f.eks. Økonomi"
+          oninput="editingUser.dept=this.value">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Jobtitel</label>
+        <input type="text" class="form-input" id="ue-role" value="${u.role}" placeholder="f.eks. Revisor"
+          oninput="editingUser.role=this.value">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Brugertype</label>
+        <div class="state-toggle">
+          <button class="state-btn ${!u.guestUser?'active-enabled':''}" onclick="setUserType(false)">Intern medarbejder</button>
+          <button class="state-btn ${u.guestUser?'active-report':''}" onclick="setUserType(true)">Gæstebruger (B2B)</button>
+        </div>
+        ${u.guestUser ? '<div class="info-box mt-2" style="font-size:12px"><span class="info-icon">ℹ️</span><div>Gæstebrugere tilføjes automatisk til gruppen "Guests" og fjernes fra "All Users".</div></div>' : ''}
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Gruppemedlemskaber</div>
+      <div class="check-group">
+        ${db.groups.map(g => {
+          const isMember = u.groups.includes(g.id);
+          const isLocked = (g.id === 'g-all' && !u.guestUser) || (g.id === 'g-guests' && u.guestUser);
+          return `<label class="check-item ${isMember ? 'selected' : ''}" ${isLocked ? 'style="opacity:.6"' : ''}>
+            <input type="checkbox" ${isMember ? 'checked' : ''} ${isLocked ? 'disabled' : ''}
+              onchange="toggleUserGroup('${g.id}', this.checked)">
+            <label>${g.name} <small>${g.desc}</small></label>
+          </label>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Sikkerhedsstatus</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius)">
+          <div>
+            <div style="font-weight:600;font-size:13px">MFA registreret</div>
+            <div style="font-size:12px;color:var(--t2)">Brugeren har registreret en MFA-metode (Authenticator, SMS m.m.)</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" ${u.mfaRegistered ? 'checked' : ''} onchange="editingUser.mfaRegistered=this.checked">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius)">
+          <div>
+            <div style="font-weight:600;font-size:13px">Kompatibel enhed</div>
+            <div style="font-size:12px;color:var(--t2)">Enheden er Intune-tilmeldt og opfylder compliance-politikker</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" ${u.deviceCompliant ? 'checked' : ''} onchange="editingUser.deviceCompliant=this.checked">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function setUserType(isGuest) {
+  editingUser.guestUser = isGuest;
+  if (isGuest) {
+    editingUser.groups = editingUser.groups.filter(g => g !== 'g-all' && g !== 'g-employees');
+    if (!editingUser.groups.includes('g-guests')) editingUser.groups.push('g-guests');
+  } else {
+    editingUser.groups = editingUser.groups.filter(g => g !== 'g-guests');
+    if (!editingUser.groups.includes('g-all')) editingUser.groups.unshift('g-all');
+  }
+  renderUserPanelBody();
+}
+
+function toggleUserGroup(gid, checked) {
+  if (checked) { if (!editingUser.groups.includes(gid)) editingUser.groups.push(gid); }
+  else { editingUser.groups = editingUser.groups.filter(g => g !== gid); }
+}
+
+function saveUser() {
+  if (!editingUser.name.trim()) { showToast('Brugernavn må ikke være tomt', 'error'); return; }
+  if (!editingUser.email.trim()) { showToast('E-mailadresse må ikke være tom', 'error'); return; }
+  const idx = db.users.findIndex(u => u.id === editingUser.id);
+  if (idx >= 0) {
+    db.users[idx] = editingUser;
+  } else {
+    db.users.push(editingUser);
+  }
+  // Update current user if we renamed them
+  initUserSwitcher();
+  closePanel();
+  renderPage();
+}
+
+function deleteUser() {
+  if (editingUser.id === db.currentUserId) {
+    showToast('Du kan ikke slette den bruger du simulerer som — skift bruger først.', 'error');
+    return;
+  }
+  panelConfirm(`Slet brugeren "${editingUser.name}"?`, () => {
+    db.users = db.users.filter(u => u.id !== editingUser.id);
+    initUserSwitcher();
+    closePanel();
+    renderPage();
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LOCATION PANEL
+// ════════════════════════════════════════════════════════════════════════════
+let editingLocationId = null;
+let editingLocation = null;
+let _nextLocationId = 10;
+
+function openLocationPanel(id) {
+  _panelMode = 'location';
+  editingLocationId = id;
+  if (id === 'new') {
+    editingLocation = {
+      id: 'loc-custom-' + (_nextLocationId++),
+      name: '',
+      type: 'ip',
+      trusted: false,
+      details: ''
+    };
+    document.getElementById('panel-title').textContent = 'Ny navngiven lokation';
+    document.getElementById('panel-delete-btn').style.display = 'none';
+  } else {
+    const l = db.namedLocations.find(l => l.id === id);
+    editingLocation = JSON.parse(JSON.stringify(l));
+    document.getElementById('panel-title').textContent = l.name || 'Rediger lokation';
+    document.getElementById('panel-delete-btn').style.display = 'inline-flex';
+  }
+  renderLocationPanelBody();
+  document.getElementById('policy-panel').classList.add('open');
+  document.getElementById('panel-overlay').classList.add('open');
+}
+
+function renderLocationPanelBody() {
+  const l = editingLocation;
+  document.getElementById('panel-body').innerHTML = `
+    <div class="panel-section">
+      <div class="panel-section-title">Navn &amp; Type</div>
+      <div class="form-group">
+        <label class="form-label">Lokationsnavn</label>
+        <input type="text" class="form-input" value="${l.name}" placeholder="f.eks. Kontor Aarhus"
+          oninput="editingLocation.name=this.value;document.getElementById('panel-title').textContent=this.value||'Ny navngiven lokation'">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <div class="state-toggle">
+          <button class="state-btn ${l.type==='ip'?'active-enabled':''}" onclick="setLocationType('ip')">🌐 IP-intervaller</button>
+          <button class="state-btn ${l.type==='country'?'active-enabled':''}" onclick="setLocationType('country')">🗺️ Lande/regioner</button>
+        </div>
+        <div class="info-box mt-2" style="font-size:12px">
+          <span class="info-icon">ℹ️</span>
+          <div>${l.type==='ip' ? 'Angiv IP-adresser eller CIDR-intervaller, f.eks. <code>192.168.1.0/24, 10.0.0.0/8</code>' : 'Angiv landekoder adskilt med komma, f.eks. <code>DK, DE, SE</code>'}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Detaljer</div>
+      <div class="form-group">
+        <label class="form-label">${l.type==='ip' ? 'IP-adresser / CIDR-intervaller' : 'Lande / regioner'}</label>
+        <textarea class="form-input" rows="4" placeholder="${l.type==='ip' ? '192.168.1.0/24\n10.0.0.0/8' : 'DK\nDE\nSE'}"
+          oninput="editingLocation.details=this.value" style="resize:vertical;font-family:monospace;font-size:12px">${l.details}</textarea>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius)">
+        <div>
+          <div style="font-weight:600;font-size:13px">Betroet lokation</div>
+          <div style="font-size:12px;color:var(--t2)">Trafik fra denne lokation betragtes som sikker og kan undtages fra MFA-krav</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${l.trusted ? 'checked' : ''} onchange="editingLocation.trusted=this.checked">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Brug i politikker</div>
+      ${(() => {
+        const usedIn = db.policies.filter(p =>
+          p.conditions.locations.enabled && (
+            p.conditions.locations.includeLocations.includes(l.id) ||
+            p.conditions.locations.excludeLocations.includes(l.id)
+          )
+        );
+        if (!usedIn.length) return '<div class="text-muted text-sm">Lokationen bruges ikke i nogen politikker endnu.</div>';
+        return '<div class="check-group">' + usedIn.map(p =>
+          `<div class="check-item" style="cursor:default"><span>${stateBadge(p.state)}</span><span style="margin-left:8px;font-size:13px">${p.name}</span></div>`
+        ).join('') + '</div>';
+      })()}
+    </div>
+  `;
+}
+
+function setLocationType(type) {
+  editingLocation.type = type;
+  renderLocationPanelBody();
+}
+
+function saveLocation() {
+  if (!editingLocation.name.trim()) { showToast('Lokationsnavn må ikke være tomt', 'error'); return; }
+  const idx = db.namedLocations.findIndex(l => l.id === editingLocation.id);
+  if (idx >= 0) {
+    db.namedLocations[idx] = editingLocation;
+  } else {
+    db.namedLocations.push(editingLocation);
+  }
+  closePanel();
+  renderPage();
+}
+
+function deleteLocation() {
+  const usedIn = db.policies.filter(p =>
+    p.conditions.locations.enabled && (
+      p.conditions.locations.includeLocations.includes(editingLocation.id) ||
+      p.conditions.locations.excludeLocations.includes(editingLocation.id)
+    )
+  );
+  if (usedIn.length) {
+    showToast(`Bruges i: ${usedIn.map(p=>p.name).join(', ')} — fjern lokationen fra disse politikker først.`, 'error');
+    return;
+  }
+  panelConfirm(`Slet lokationen "${editingLocation.name}"?`, () => {
+    db.namedLocations = db.namedLocations.filter(l => l.id !== editingLocation.id);
+    closePanel();
+    renderPage();
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// GROUP PANEL
+// ════════════════════════════════════════════════════════════════════════════
+let editingGroupId = null;
+let editingGroup = null;
+
+function openGroupPanel(id) {
+  _panelMode = 'group';
+  editingGroupId = id;
+  if (id === 'new') {
+    editingGroup = {
+      id: 'g-custom-' + (db.nextGroupId++),
+      name: '',
+      desc: '',
+    };
+    document.getElementById('panel-title').textContent = 'Ny gruppe';
+    document.getElementById('panel-delete-btn').style.display = 'none';
+  } else {
+    const g = db.groups.find(g => g.id === id);
+    editingGroup = JSON.parse(JSON.stringify(g));
+    document.getElementById('panel-title').textContent = g.name || 'Rediger gruppe';
+    document.getElementById('panel-delete-btn').style.display = 'inline-flex';
+  }
+  renderGroupPanelBody();
+  document.getElementById('policy-panel').classList.add('open');
+  document.getElementById('panel-overlay').classList.add('open');
+}
+
+function renderGroupPanelBody() {
+  const g = editingGroup;
+  const isNew = !db.groups.some(x => x.id === g.id);
+  const members = isNew ? [] : db.users.filter(u => u.groups.includes(g.id));
+  document.getElementById('panel-body').innerHTML = `
+    <div class="panel-section">
+      <div class="panel-section-title">Gruppenavn &amp; beskrivelse</div>
+      <div class="form-group">
+        <label class="form-label">Gruppenavn</label>
+        <input type="text" class="form-input" value="${g.name}" placeholder="f.eks. Nexus Consultants"
+          oninput="editingGroup.name=this.value;document.getElementById('panel-title').textContent=this.value||'Ny gruppe'">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Beskrivelse <span class="form-label-hint">(valgfri)</span></label>
+        <textarea class="form-input" rows="3" placeholder="Hvad bruges gruppen til?"
+          oninput="editingGroup.desc=this.value" style="resize:vertical">${g.desc||''}</textarea>
+      </div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-section-title">Medlemmer</div>
+      ${members.length === 0
+        ? '<div class="text-muted text-sm">Ingen medlemmer endnu. Tilføj medlemmer via en brugers redigeringspanel under "Brugere".</div>'
+        : `<div class="check-group">${members.map(u => `<div class="check-item" style="cursor:default"><span style="font-size:13px">${u.name}</span></div>`).join('')}</div>`
+      }
+    </div>
+  `;
+}
+
+function saveGroup() {
+  if (!editingGroup.name.trim()) { showToast('Gruppenavn må ikke være tomt', 'error'); return; }
+  const idx = db.groups.findIndex(g => g.id === editingGroup.id);
+  if (idx >= 0) {
+    db.groups[idx] = editingGroup;
+  } else {
+    db.groups.push(editingGroup);
+  }
+  closePanel();
+  renderPage();
+}
+
+function deleteGroup() {
+  const gid = editingGroup.id;
+  const memberCount = db.users.filter(u => u.groups.includes(gid)).length;
+  const usedInPolicies = db.policies.filter(p =>
+    (p.users.includeGroups||[]).includes(gid) || (p.users.excludeGroups||[]).includes(gid)
+  );
+  let msg = `Slet gruppen "${editingGroup.name}"?`;
+  if (memberCount) msg += ` Den fjernes fra ${memberCount} bruger(e).`;
+  if (usedInPolicies.length) msg += ` Bruges i politikker: ${usedInPolicies.map(p=>p.name).join(', ')} — fjernes også derfra.`;
+  panelConfirm(msg, () => {
+    db.groups = db.groups.filter(g => g.id !== gid);
+    db.users.forEach(u => { u.groups = u.groups.filter(g => g !== gid); });
+    db.policies.forEach(p => {
+      p.users.includeGroups = (p.users.includeGroups||[]).filter(g => g !== gid);
+      p.users.excludeGroups = (p.users.excludeGroups||[]).filter(g => g !== gid);
+    });
+    closePanel();
+    renderPage();
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// HELPERS & LABEL RENDERERS
+// ════════════════════════════════════════════════════════════════════════════
+function stateBadge(state) {
+  if (state==='enabled')    return '<span class="badge badge-enabled"><span class="badge-dot"></span>Aktiveret</span>';
+  if (state==='reportOnly') return '<span class="badge badge-report"><span class="badge-dot"></span>Report-only</span>';
+  return '<span class="badge badge-disabled">Deaktiveret</span>';
+}
+function grantLabel(grant) {
+  if (!grant.controls.length) return '<span class="text-muted">—</span>';
+  if (grant.controls.includes('block')) return '<span class="badge badge-block">Blokér</span>';
+  return grant.controls.map(c=>`<span class="badge badge-mfa" style="font-size:11px">${CONTROL_LABELS[c]}</span>`).join(' ');
+}
+function grantBadge(gr) {
+  if (gr.type==='block') return '<span class="badge badge-block">🚫 Blokér adgang</span>';
+  return `<span class="badge badge-mfa">${gr.label}</span>`;
+}
+function usersLabel(u) {
+  if (u.includeAll) {
+    const excl = [...(u.excludeGroups||[]).map(g=>findGroup(g)?.name), ...(u.excludeUsers||[]).map(uid=>findUser(uid)?.name)].filter(Boolean);
+    return excl.length ? `Alle (ekskl. ${excl.slice(0,2).join(', ')}${excl.length>2?'…':''})` : 'Alle brugere';
+  }
+  const inc = [...(u.includeGroups||[]).map(g=>findGroup(g)?.name), ...(u.includeUsers||[]).map(uid=>findUser(uid)?.name)].filter(Boolean);
+  return inc.length ? inc.slice(0,2).join(', ')+(inc.length>2?'…':'') : '—';
+}
+function appsLabel(a) {
+  if (a.includeAll) return 'Alle cloud-apps';
+  return (a.includeApps||[]).map(id=>findApp(id)?.name).filter(Boolean).slice(0,2).join(', ')||'—';
+}
+function conditionsLabel(c) {
+  const parts = [];
+  if (c.signInRisk.enabled && c.signInRisk.levels.length)  parts.push('Loginrisiko');
+  if (c.clientApps.enabled && c.clientApps.apps.length)   parts.push('Klientapp');
+  if (c.devicePlatforms.enabled)                           parts.push('Platform');
+  if (c.locations.enabled)                                 parts.push('Lokation');
+  return parts.length ? parts.join(', ') : '<span class="text-muted text-sm">Ingen</span>';
+}
+function updateNavBadge() {
+  document.getElementById('nav-badge-count').textContent = db.policies.length;
+}
+function updateLogBadge() {
+  const el = document.getElementById('nav-badge-logs');
+  if (db.signInLogs.length > 0) {
+    el.textContent = db.signInLogs.length;
+    el.style.display = '';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// USER SWITCHER
+// ════════════════════════════════════════════════════════════════════════════
+function initUserSwitcher() {
+  const sel = document.getElementById('current-user-select');
+  sel.innerHTML = db.users.map(u=>`<option value="${u.id}">${u.isBreakGlass?'⚠ ':''}${u.name}</option>`).join('');
+  sel.value = db.currentUserId;
+}
+function switchUser(id) {
+  db.currentUserId = id;
+  renderPage();
+}
+function simulateAs(userId) {
+  db.currentUserId = userId;
+  document.getElementById('current-user-select').value = userId;
+  navigate('whatif');
+  setTimeout(()=>{
+    const sel = document.getElementById('wi-user');
+    if(sel) { sel.value = userId; }
+  }, 50);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// THEME
+// ════════════════════════════════════════════════════════════════════════════
+function toggleTheme() {
+  const root = document.documentElement;
+  const cur = root.getAttribute('data-theme');
+  const isDark = cur === 'dark' || (!cur && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  root.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  updateThemeIcon();
+}
+function updateThemeIcon() {
+  const root = document.documentElement;
+  const cur = root.getAttribute('data-theme');
+  const isDark = cur === 'dark' || (!cur && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.getElementById('theme-icon').innerHTML = isDark
+    ? '<path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2a5 5 0 110 10A5 5 0 018 3z"/>'
+    : '<path d="M8 12a4 4 0 100-8 4 4 0 000 8zM8 0h1v2H8V0zM0 7h2v2H0V7zm14 0h2v2h-2V7zM8 14h1v2H8v-2zM2.2 2.2l1.4 1.4-1.4 1.4-1.4-1.4 1.4-1.4zm10 0l1.4 1.4-1.4 1.4-1.4-1.4 1.4-1.4zM2.2 11.4l1.4 1.4-1.4 1.4-1.4-1.4 1.4-1.4zm10 0l1.4 1.4-1.4 1.4-1.4-1.4 1.4-1.4z"/>';
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// EXPORT / IMPORT
+// ════════════════════════════════════════════════════════════════════════════
+
+// Which fields to include in the export snapshot
+const EXPORT_FIELDS = ['policies','users','groups','namedLocations','nextPolicyId','nextGroupId'];
+
+function exportData() {
+  const snapshot = {};
+  EXPORT_FIELDS.forEach(k => { if (db[k] !== undefined) snapshot[k] = db[k]; });
+  snapshot._exportedAt = new Date().toISOString();
+  snapshot._version = 1;
+
+  const json = JSON.stringify(snapshot, null, 2);
+  const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+
+  // Filnavn med tidsstempel, så flere gemte filer ikke overskriver hinanden
+  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  const filename = `cloud-id-data-${ts}.json`;
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  showToast(`✓ Data gemt som fil: ${filename}`, 'ok');
+}
+
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    let snapshot;
+    try {
+      snapshot = JSON.parse(e.target.result);
+    } catch(err) {
+      showToast('Kunne ikke læse filen — er det en gyldig JSON-fil?', 'error');
+      return;
+    }
+    if (!snapshot.policies || !snapshot.users) {
+      showToast('Filen mangler "policies" eller "users" — er den eksporteret fra Cloud ID?', 'error');
+      return;
+    }
+    EXPORT_FIELDS.forEach(k => { if (snapshot[k] !== undefined) db[k] = snapshot[k]; });
+    initUserSwitcher();
+    renderPage();
+    showToast(`✓ Data indlæst: ${snapshot.policies.length} politikker · ${snapshot.users.length} brugere · ${(snapshot.namedLocations||[]).length} lokationer`, 'ok');
+  };
+  reader.onerror = () => showToast('Fejl ved læsning af filen.', 'error');
+  reader.readAsText(file);
+}
+
+// Inline slet-bekræftelse — omdanner knappen i stedet for confirm()
+// Brug: panelConfirm(besked, () => { /* selve slettelogikken */ });
+let _confirmTimer = null;
+let _confirmPending = null;
+function panelConfirm(msg, action) {
+  const btn = document.getElementById('panel-delete-btn');
+  if (_confirmPending) {
+    // Andet klik — udfør den gemte handling
+    clearTimeout(_confirmTimer);
+    _confirmPending = null;
+    btn.textContent = 'Slet';
+    btn.style.background = '';
+    action();
+    return;
+  }
+  // Første klik — vis bekræftelse og gem handling
+  _confirmPending = action;
+  btn.textContent = 'Bekræft sletning?';
+  btn.style.background = 'var(--err)';
+  showToast(msg + '  Klik igen for at bekræfte.', 'error');
+  clearTimeout(_confirmTimer);
+  _confirmTimer = setTimeout(() => {
+    _confirmPending = null;
+    btn.textContent = 'Slet';
+    btn.style.background = '';
+  }, 4000);
+}
+
+function showToast(msg, type) {
+  let t = document.getElementById('toast-el');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast-el';
+    t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:3000;padding:10px 18px;border-radius:6px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:opacity .3s;max-width:90vw;text-align:center;pointer-events:none';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.background = type === 'error' ? 'var(--err-bg)' : 'var(--ok-bg)';
+  t.style.color      = type === 'error' ? 'var(--err)'    : 'var(--ok)';
+  t.style.border     = `1px solid ${type === 'error' ? 'var(--err)' : 'var(--ok)'}`;
+  t.style.opacity = '1';
+  clearTimeout(t._hide);
+  t._hide = setTimeout(() => { t.style.opacity = '0'; }, 4000);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PAGE EVENT ATTACHMENT
+// ════════════════════════════════════════════════════════════════════════════
+function attachPageEvents() {
+  // Nothing extra needed — events are inline
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════════════════
+initUserSwitcher();
+navigate('overview');
+updateThemeIcon();
+</script>
+
+</body></html>
