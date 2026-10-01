@@ -1,0 +1,1032 @@
+<meta charset="utf-8">
+<title>Fraværsværktøj</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+/* ── TOKENS ── */
+:root {
+  --bg:        #EFF2F8;
+  --surface:   #FFFFFF;
+  --surface-2: #E5EAF3;
+  --border:    #CDD5E5;
+  --text:      #18243A;
+  --text-2:    #58677F;
+  --text-3:    #9AA5BC;
+  --accent:    #0C7A69;
+  --accent-dim:rgba(12,122,105,0.10);
+  --red:       #D42E46;  --red-bg:    rgba(212,46,70,0.09);  --red-bd:    rgba(212,46,70,0.22);
+  --amber:     #C27000;  --amber-bg:  rgba(194,112,0,0.09);  --amber-bd:  rgba(194,112,0,0.22);
+  --yellow:    #9A8200;  --yellow-bg: rgba(154,130,0,0.09);  --yellow-bd: rgba(154,130,0,0.22);
+  --green:     #18945C;  --green-bg:  rgba(24,148,92,0.09);  --green-bd:  rgba(24,148,92,0.22);
+  --radius: 10px;
+  --ff-body: 'Outfit', system-ui, sans-serif;
+  --ff-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:#0B0F1D; --surface:#131929; --surface-2:#1B2238; --border:#283450;
+    --text:#E2E8F5; --text-2:#8898B8; --text-3:#566480;
+    --accent:#0FB89C; --accent-dim:rgba(15,184,156,0.11);
+  }
+}
+:root[data-theme="dark"] {
+  --bg:#0B0F1D; --surface:#131929; --surface-2:#1B2238; --border:#283450;
+  --text:#E2E8F5; --text-2:#8898B8; --text-3:#566480;
+  --accent:#0FB89C; --accent-dim:rgba(15,184,156,0.11);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  font-family: var(--ff-body);
+  background: var(--bg); color: var(--text);
+  margin: 0; padding-inline: 20px; padding-block: 28px;
+}
+
+/* ── LAYOUT ── */
+.wrap { max-width: 940px; margin: 0 auto; }
+
+/* ── HEADER ── */
+.page-header { margin-bottom: 20px; }
+.page-header h1 {
+  font-size: 1.55rem; font-weight: 700;
+  letter-spacing: -0.025em; margin: 0 0 3px; color: var(--text);
+}
+.page-header p {
+  font-size: 0.83rem; color: var(--text-3); margin: 0;
+  display: flex; align-items: center; gap: 6px;
+}
+.page-header p::before {
+  content:''; display:inline-block; width:7px; height:7px;
+  border-radius:50%; background:var(--accent); flex-shrink:0;
+}
+
+/* ── CARD ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+/* ── UPLOAD ── */
+.drop-zone {
+  border: 2px dashed var(--border); border-radius: 8px;
+  padding: 20px; text-align: center; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s; position: relative;
+}
+.drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: var(--accent-dim); }
+.drop-zone.loaded { border-color: var(--accent); background: var(--accent-dim); border-style: solid; }
+.drop-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.drop-icon { font-size: 1.6rem; line-height:1; margin-bottom: 5px; }
+.drop-text { font-size: 0.87rem; color: var(--text-2); margin: 0; }
+.drop-text strong { color: var(--accent); }
+.file-status { font-size: 0.81rem; color: var(--text-2); margin: 4px 0 0; font-family: var(--ff-mono); }
+
+/* ── TABS ── */
+.tab-bar {
+  display: flex; gap: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px; margin-bottom: 16px;
+}
+.tab-btn {
+  flex: 1; padding: 9px 16px;
+  font-family: var(--ff-body); font-size: 0.88rem; font-weight: 500;
+  border: none; border-radius: 7px;
+  background: transparent; color: var(--text-2);
+  cursor: pointer; transition: all 0.15s;
+}
+.tab-btn.active {
+  background: var(--surface); color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── SHARED INPUTS ── */
+.field-label {
+  display: block; font-size: 0.73rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-3); margin-bottom: 5px;
+}
+input[type="number"], select {
+  padding: 8px 11px;
+  border: 1px solid var(--border); border-radius: 7px;
+  background: var(--surface-2); color: var(--text);
+  font-family: var(--ff-mono); font-size: 1.05rem; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  outline: none; transition: border-color 0.15s;
+  appearance: none; -webkit-appearance: none;
+}
+input[type="number"]:focus, select:focus { border-color: var(--accent); }
+select { font-family: var(--ff-body); font-size: 0.93rem; font-weight: 500; cursor: pointer; padding-right: 28px; }
+.select-wrap { position: relative; display: inline-block; width: 100%; }
+.select-wrap::after {
+  content:'▾'; position:absolute; right:10px; top:50%;
+  transform:translateY(-50%); color:var(--text-3); pointer-events:none; font-size:0.85rem;
+}
+
+.btn {
+  padding: 10px 20px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 8px;
+  font-family: var(--ff-body); font-size: 0.90rem; font-weight: 600;
+  cursor: pointer; transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.86; }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-ghost {
+  padding: 6px 12px; font-size: 0.78rem; font-weight: 500;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: transparent; color: var(--text-2);
+  cursor: pointer; font-family: var(--ff-body); transition: all 0.12s;
+}
+.btn-ghost:hover { border-color: var(--text-2); color: var(--text); }
+
+/* ── TABLE SHARED ── */
+.table-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow-x: auto;
+}
+table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+thead th {
+  font-size: 0.69rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--text-3);
+  padding: 10px 14px; text-align: left;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2); white-space: nowrap;
+}
+thead th.c { text-align: center; }
+thead th.r { text-align: right; }
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  transition: background 0.1s;
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface-2); }
+tbody tr.s-red    { border-left-color: var(--red); }
+tbody tr.s-amber  { border-left-color: var(--amber); }
+tbody tr.s-yellow { border-left-color: var(--yellow); }
+tbody tr.s-green  { border-left-color: var(--green); }
+td { padding: 10px 14px; vertical-align: middle; }
+
+/* Badges */
+.badge {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:0.71rem; font-weight:600;
+  padding: 3px 8px; border-radius:4px; white-space:nowrap; border:1px solid;
+}
+.badge-red    { background:var(--red-bg);    color:var(--red);    border-color:var(--red-bd); }
+.badge-amber  { background:var(--amber-bg);  color:var(--amber);  border-color:var(--amber-bd); }
+.badge-yellow { background:var(--yellow-bg); color:var(--yellow); border-color:var(--yellow-bd); }
+.badge-green  { background:var(--green-bg);  color:var(--green);  border-color:var(--green-bd); }
+
+/* ── OVERBLIK TAB ── */
+.cfg-header {
+  display: grid; grid-template-columns: 1fr 120px 120px;
+  gap: 10px; padding: 0 2px; margin-bottom: 8px;
+}
+.cfg-header span {
+  font-size: 0.71rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-3);
+}
+.cfg-header span:not(:first-child) { text-align: center; }
+
+.cfg-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.cfg-row {
+  display: grid; grid-template-columns: 1fr 120px 120px;
+  gap: 10px; align-items: center;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 12px;
+}
+.cfg-row-label {
+  font-size: 0.89rem; font-weight: 500; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cfg-row input[type="number"] {
+  width: 100%; text-align: center; font-size: 0.97rem; padding: 7px 8px;
+}
+
+@media (max-width: 520px) {
+  .cfg-header { grid-template-columns: 1fr 90px 90px; }
+  .cfg-row    { grid-template-columns: 1fr 90px 90px; }
+}
+
+/* Count cells */
+.td-count {
+  text-align: center; font-family: var(--ff-mono);
+  font-size: 1.0rem; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.td-count.zero { color: var(--text-3); font-weight: 400; }
+.td-count.c-red    { color: var(--red); }
+.td-count.c-amber  { color: var(--amber); }
+.td-count.c-yellow { color: var(--yellow); }
+.td-count.c-green  { color: var(--green); }
+
+/* Distribution bar */
+.dist-bar {
+  display: flex; height: 8px; border-radius: 4px;
+  overflow: hidden; min-width: 70px; background: var(--surface-2);
+}
+.dist-seg { height: 100%; transition: width 0.35s; }
+.seg-red    { background: var(--red); }
+.seg-amber  { background: var(--amber); }
+.seg-yellow { background: var(--yellow); }
+.seg-green  { background: var(--green); }
+
+.td-fag { font-weight: 600; color: var(--text); }
+.td-lek { font-family: var(--ff-mono); font-size: 0.79rem; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+/* ── DETALJER TAB ── */
+.detaljer-config {
+  display: grid; grid-template-columns: 1fr 130px 130px auto;
+  gap: 12px; align-items: end;
+}
+@media (max-width: 640px) {
+  .detaljer-config { grid-template-columns: 1fr 1fr; }
+  .detaljer-config .field-fag { grid-column: 1 / -1; }
+  .detaljer-config .btn { grid-column: 1 / -1; }
+}
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
+}
+.topbar h2 { font-size: 0.95rem; font-weight: 600; margin: 0; }
+
+/* Pct cells */
+.pct-cell { white-space: nowrap; }
+.pct-inner { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.mini-bar { width: 80px; height: 7px; border-radius: 4px; background: var(--surface-2); overflow: hidden; flex-shrink: 0; }
+.mini-bar.wc { opacity: 0.55; }
+.mini-fill { height: 100%; border-radius: 4px; transition: width 0.35s; }
+.f-red    { background: var(--red); }
+.f-amber  { background: var(--amber); }
+.f-yellow { background: var(--yellow); }
+.f-green  { background: var(--green); }
+.pct-num { font-family: var(--ff-mono); font-size: 0.80rem; font-weight: 400; color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; }
+.pct-num.wc { color: var(--text-3); }
+.td-name { font-weight: 500; }
+.td-id   { font-family: var(--ff-mono); font-size: 0.75rem; color: var(--text-3); margin-top: 1px; }
+
+/* Summary tiles */
+.tile-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
+@media (max-width: 580px) { .tile-row { grid-template-columns: repeat(2,1fr); } }
+.tile {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px 14px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.tile-label { font-size: 0.69rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); }
+.tile-val { font-family: var(--ff-mono); font-size: 1.9rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.tile-val.c-red    { color: var(--red); }
+.tile-val.c-amber  { color: var(--amber); }
+.tile-val.c-yellow { color: var(--yellow); }
+.tile-val.c-green  { color: var(--green); }
+
+/* Footer note */
+.foot-note { font-size: 0.75rem; color: var(--text-3); margin-top: 12px; }
+
+/* ── STUDERENDE-MATRIX ── */
+.matrix-wrap { overflow-x: auto; }
+.matrix-wrap table { min-width: max-content; }
+.matrix-wrap thead th {
+  white-space: nowrap; max-width: 160px;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.mc {
+  text-align: center; font-family: var(--ff-mono);
+  font-size: 0.78rem; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 8px 10px; white-space: nowrap;
+}
+.mc.mc-red    { background: var(--red-bg);    color: var(--red); }
+.mc.mc-amber  { background: var(--amber-bg);  color: var(--amber); }
+.mc.mc-yellow { background: var(--yellow-bg); color: var(--yellow); }
+.mc.mc-green  { color: var(--text-3); font-weight: 400; }
+.mc.mc-zero   { color: var(--border); font-weight: 400; }
+.td-mat-name  { white-space: nowrap; }
+.mat-score {
+  text-align: center; padding: 8px 12px;
+  font-size: 0.72rem; color: var(--text-3);
+}
+.mat-score-dot { display: flex; gap: 2px; justify-content: center; flex-wrap: nowrap; }
+
+/* Upload grid */
+.upload-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+@media (max-width: 600px) { .upload-grid { grid-template-columns: 1fr; } }
+.upload-label {
+  font-size: 0.73rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-3); margin-bottom: 7px; display: block;
+}
+.upload-label span { text-transform: none; font-weight: 400; font-size: 0.85em; }
+
+/* CSV match badge */
+.csv-match-note {
+  font-size: 0.76rem; color: var(--text-3); margin-top: 10px;
+  padding: 7px 10px; background: var(--surface-2); border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+@media (prefers-reduced-motion: reduce) { .mini-fill, .dist-seg { transition: none; } }
+</style>
+
+<!-- ────────────────── HTML ────────────────── -->
+<div class="wrap">
+
+  <div class="page-header">
+    <h1>Fraværsværktøj — CSIK</h1>
+    <p>Data behandles lokalt i din browser og sendes ikke nogen steder</p>
+  </div>
+
+  <!-- ── Shared upload ── -->
+  <div class="card">
+    <div class="upload-grid">
+      <div>
+        <span class="upload-label">Excel - Fraværsdata</span>
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" id="file-input" accept=".xlsx,.xls">
+          <div class="drop-icon" id="drop-icon">📂</div>
+          <p class="drop-text"><strong>Vælg Excel-fil</strong> eller træk den hertil</p>
+          <p class="file-status" id="file-status"></p>
+        </div>
+      </div>
+      <div>
+        <span class="upload-label">TimeEdit CSV - Lektionsplan <span>(valgfri)</span></span>
+        <div class="drop-zone" id="csv-zone">
+          <input type="file" id="csv-input" accept=".csv,.txt">
+          <div class="drop-icon" id="csv-icon">📅</div>
+          <p class="drop-text"><strong>Vælg TimeEdit CSV</strong> eller træk den hertil</p>
+          <p class="file-status" id="csv-status"></p>
+        </div>
+      </div>
+    </div>
+    <div class="csv-match-note" id="csv-match-note" hidden></div>
+  </div>
+
+  <!-- ── Tabs (hidden until file loaded) ── -->
+  <div id="main-section" hidden>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="overblik">Holdoverblik</button>
+      <button class="tab-btn" data-tab="detaljer">Fagdetaljer</button>
+      <button class="tab-btn" data-tab="studerende">Studerende</button>
+    </div>
+
+    <!-- ══ TAB: HOLDOVERBLIK ══ -->
+    <div id="tab-overblik" class="tab-panel active">
+
+      <div class="card">
+        <div class="cfg-header">
+          <span>Fag</span><span>Lektioner i alt</span><span>Afviklet</span>
+        </div>
+        <div class="cfg-rows" id="cfg-rows"></div>
+        <button class="btn" id="btn-overblik">Beregn overblik</button>
+      </div>
+
+      <div id="overblik-results" hidden>
+        <div class="topbar">
+          <h2 id="overblik-title">Fraværsoverblik</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fag</th>
+                <th>Afviklet</th>
+                <th class="c">🔴 Afhjælpningsprøve<br><span style="font-weight:400;text-transform:none;letter-spacing:0">garanteret</span></th>
+                <th class="c">🟠 I risiko</th>
+                <th class="c">🟡 Følg op</th>
+                <th class="c">🟢 OK</th>
+                <th>Fordeling</th>
+              </tr>
+            </thead>
+            <tbody id="overblik-tbody"></tbody>
+          </table>
+        </div>
+        <p class="foot-note">
+          🔴 Best case &gt; 20% · 🟠 Nuværende ≥ 15%, best case ≤ 20% · 🟡 Nuværende ≥ 10% ·
+          Afhjælpningsprøve udløses hvis fraværsprocenten ved semesterets afslutning overstiger 20%
+        </p>
+      </div>
+
+    </div><!-- /tab-overblik -->
+
+    <!-- ══ TAB: FAGDETALJER ══ -->
+    <div id="tab-detaljer" class="tab-panel">
+
+      <div class="card">
+        <div class="detaljer-config">
+          <div class="field-fag">
+            <label class="field-label" for="inp-fag">Fag</label>
+            <div class="select-wrap">
+              <select id="inp-fag"></select>
+            </div>
+          </div>
+          <div>
+            <label class="field-label" for="inp-total">Lektioner i alt</label>
+            <input type="number" id="inp-total" value="40" min="1" max="999" style="width:100%">
+          </div>
+          <div>
+            <label class="field-label" for="inp-held">Afviklet</label>
+            <input type="number" id="inp-held" value="" min="0" max="999" placeholder="0" style="width:100%">
+          </div>
+          <button class="btn" id="btn-detaljer">Vis studerende</button>
+        </div>
+      </div>
+
+      <div id="detaljer-results" hidden>
+        <div class="tile-row" id="tile-row"></div>
+        <div class="topbar">
+          <h2 id="detaljer-title"></h2>
+          <div style="display:flex;gap:6px">
+            <button class="tab-btn active" data-sort="current" id="sort-bar" style="font-size:.75rem;padding:5px 10px">Fravær ↓</button>
+            <button class="tab-btn" data-sort="name" style="font-size:.75rem;padding:5px 10px">Navn A–Z</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Studerende</th>
+                <th class="r">Nuværende</th>
+                <th class="r">Best case</th>
+                <th class="r">Worst case</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="detaljer-tbody"></tbody>
+          </table>
+        </div>
+        <p class="foot-note">
+          Afhjælpningsprøve hvis fraværsprocent ved semesterets afslutning overstiger 20% ·
+          Best case = ingen fravær resten af semesteret · Worst case = fraværende alle resterende lektioner
+        </p>
+      </div>
+
+    </div><!-- /tab-detaljer -->
+
+    <!-- ══ TAB: STUDERENDE ══ -->
+    <div id="tab-studerende" class="tab-panel">
+
+      <div id="studerende-results" hidden>
+        <div class="topbar" style="margin-bottom:10px">
+          <h2 id="studerende-title">Alle studerende</h2>
+          <div style="display:flex;gap:6px">
+            <button class="tab-btn active" data-msort="score" style="font-size:.75rem;padding:5px 10px">Alvorligst først</button>
+            <button class="tab-btn" data-msort="name" style="font-size:.75rem;padding:5px 10px">Navn A-Z</button>
+          </div>
+        </div>
+        <div class="matrix-wrap table-wrap">
+          <table id="matrix-table">
+            <thead id="matrix-head"></thead>
+            <tbody id="matrix-body"></tbody>
+          </table>
+        </div>
+        <p class="foot-note" id="matrix-note"></p>
+      </div>
+
+    </div><!-- /tab-studerende -->
+
+  </div><!-- /main-section -->
+</div><!-- /wrap -->
+
+<script>
+// ═══════════════════════════════════════
+// SHARED STATE
+// ═══════════════════════════════════════
+let rawRows     = [];
+let colHeaders  = [];
+let nameCol     = -1;
+let subjectCols = []; // [{idx, label}]
+let detSortKey  = 'current';
+let scheduleData = {}; // { fagLabel: { total, held } } — populated from TimeEdit CSV
+
+// ═══════════════════════════════════════
+// REFS
+// ═══════════════════════════════════════
+const dropZone      = document.getElementById('drop-zone');
+const fileInput     = document.getElementById('file-input');
+const fileStatus    = document.getElementById('file-status');
+const dropIcon      = document.getElementById('drop-icon');
+const mainSection   = document.getElementById('main-section');
+const csvZone       = document.getElementById('csv-zone');
+const csvInput      = document.getElementById('csv-input');
+const csvStatus     = document.getElementById('csv-status');
+const csvIcon       = document.getElementById('csv-icon');
+const csvMatchNote  = document.getElementById('csv-match-note');
+
+// Overblik
+const cfgRowsEl     = document.getElementById('cfg-rows');
+const btnOverblik   = document.getElementById('btn-overblik');
+const overblikRes   = document.getElementById('overblik-results');
+const overblikTbody = document.getElementById('overblik-tbody');
+const overblikTitle = document.getElementById('overblik-title');
+
+// Detaljer
+const inpFag        = document.getElementById('inp-fag');
+const inpTotal      = document.getElementById('inp-total');
+const inpHeld       = document.getElementById('inp-held');
+const btnDetaljer   = document.getElementById('btn-detaljer');
+const detaljerRes   = document.getElementById('detaljer-results');
+const tileRow       = document.getElementById('tile-row');
+const detaljerTitle = document.getElementById('detaljer-title');
+const detaljerTbody = document.getElementById('detaljer-tbody');
+
+// ═══════════════════════════════════════
+// LOCAL STORAGE
+// ═══════════════════════════════════════
+function lsGet(key, def) {
+  try { const v = localStorage.getItem(key); return v !== null ? v : def; } catch(e) { return def; }
+}
+function lsSet(key, val) { try { localStorage.setItem(key, val); } catch(e) {} }
+function lsGetObj(key) { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch(e) { return {}; } }
+function lsSetObj(key, obj) { try { localStorage.setItem(key, JSON.stringify(obj)); } catch(e) {} }
+
+// Restore detaljer numeric prefs on load
+inpTotal.value = lsGet('frv-total', '40');
+inpHeld.value  = lsGet('frv-held',  '');
+
+// ═══════════════════════════════════════
+// DRAG & DROP
+// ═══════════════════════════════════════
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+['dragleave','dragend'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.remove('drag-over')));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); const f = e.dataTransfer.files[0]; if (f) loadFile(f); });
+fileInput.addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+
+csvZone.addEventListener('dragover', e => { e.preventDefault(); csvZone.classList.add('drag-over'); });
+['dragleave','dragend'].forEach(ev => csvZone.addEventListener(ev, () => csvZone.classList.remove('drag-over')));
+csvZone.addEventListener('drop', e => { e.preventDefault(); csvZone.classList.remove('drag-over'); const f = e.dataTransfer.files[0]; if (f) loadCSV(f); });
+csvInput.addEventListener('change', e => { if (e.target.files[0]) loadCSV(e.target.files[0]); });
+
+// ═══════════════════════════════════════
+// LOAD FILE
+// ═══════════════════════════════════════
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const wb = XLSX.read(ev.target.result, { type: 'array' });
+      const sheetName = wb.SheetNames.find(n => n.trim().toLowerCase() === 'fag');
+      if (!sheetName) { alert('Fanen "Fag" ikke fundet. Faner: ' + wb.SheetNames.join(', ')); return; }
+
+      rawRows    = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header:1, defval:'' });
+      colHeaders = rawRows[0].map(h => String(h||'').trim());
+      nameCol    = colHeaders.findIndex(h => h.toLowerCase().includes('visningsnavn'));
+      const idIdx= colHeaders.findIndex(h => h.toLowerCase().includes('brugernavn'));
+
+      if (nameCol === -1) { alert('Kolonne "Visningsnavn" ikke fundet.'); return; }
+
+      const skip = new Set([nameCol, idIdx].filter(i => i >= 0));
+      subjectCols = colHeaders.map((label, idx) => ({idx, label})).filter(({idx, label}) => !skip.has(idx) && label.trim());
+      if (!subjectCols.length) { alert('Ingen fagkolonner fundet.'); return; }
+
+      const n = rawRows.slice(1).filter(r => String(r[nameCol]||'').trim()).length;
+      dropZone.classList.add('loaded');
+      dropIcon.textContent = '✅';
+      fileStatus.textContent = file.name + '  ·  ' + n + ' studerende  ·  ' + subjectCols.length + ' fag';
+      overblikTitle.textContent = file.name.replace(/\.[^.]+$/, '');
+
+      buildOverblikConfig();
+      buildDetaljerSelect();
+      mainSection.hidden = false;
+      if (Object.keys(scheduleData).length) { applySchedule(); showMatchNote(); }
+
+    } catch(err) { alert('Fejl ved indlæsning: ' + err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ═══════════════════════════════════════
+// LOAD CSV (TimeEdit)
+// ═══════════════════════════════════════
+function parseCSVLine(line) {
+  const result = []; let inQ = false, cur = '';
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  result.push(cur);
+  return result;
+}
+
+function parseDMY(s) {
+  const p = (s||'').trim().split('.');
+  if (p.length !== 3) return null;
+  return new Date(+p[2], +p[1] - 1, +p[0]);
+}
+
+function loadCSV(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const lines = ev.target.result.split(/\r?\n/);
+      // Find the header row
+      let headerIdx = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].includes('Startdato')) { headerIdx = i; break; }
+      }
+      if (headerIdx < 0) { alert('TimeEdit CSV-format ikke genkendt (ingen "Startdato"-kolonne).'); return; }
+
+      const headers = parseCSVLine(lines[headerIdx]);
+      const colFag  = headers.findIndex(h => h.trim() === 'Fag');
+      const colDate = headers.findIndex(h => h.trim() === 'Startdato');
+      if (colFag < 0 || colDate < 0) { alert('Kolonner "Fag" og/eller "Startdato" ikke fundet i CSV.'); return; }
+
+      const today = new Date();
+      today.setHours(23, 59, 59, 999); // hele dagen tæller som afviklet
+
+      const counts = {};
+      for (let i = headerIdx + 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const cols = parseCSVLine(line);
+        const fag  = (cols[colFag] || '').trim();
+        if (!fag) continue; // ingen fag = ikke en lektion (IT-fest osv.)
+        const date = parseDMY(cols[colDate] || '');
+        if (!date) continue;
+        if (!counts[fag]) counts[fag] = { total: 0, held: 0 };
+        counts[fag].total++;
+        if (date <= today) counts[fag].held++;
+      }
+
+      scheduleData = counts;
+      const fagCount = Object.keys(counts).length;
+      csvZone.classList.add('loaded');
+      csvIcon.textContent = '✅';
+      csvStatus.textContent = file.name + '  ·  ' + fagCount + ' fag';
+
+      if (rawRows.length) applySchedule();
+
+    } catch(err) { alert('Fejl ved indlæsning af CSV: ' + err.message); }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function applySchedule() {
+  // Fill overblik config rows
+  document.querySelectorAll('.cfg-row').forEach(row => {
+    const s = scheduleData[row.dataset.label];
+    if (s) {
+      row.querySelector('.inp-cfg-total').value = s.total;
+      row.querySelector('.inp-cfg-held').value  = s.held;
+    }
+  });
+  // Fill detaljer inputs for current selection
+  applyScheduleToDetaljer();
+  // Show match report
+  showMatchNote();
+}
+
+function applyScheduleToDetaljer() {
+  if (!Object.keys(scheduleData).length) return;
+  const label = colHeaders[parseInt(inpFag.value)] || '';
+  const s = scheduleData[label];
+  if (s) { inpTotal.value = s.total; inpHeld.value = s.held; }
+}
+
+function showMatchNote() {
+  const csvFag   = Object.keys(scheduleData);
+  const excelFag = subjectCols.map(sc => sc.label);
+  const noMatch  = csvFag.filter(f => !excelFag.includes(f));
+  if (noMatch.length) {
+    csvMatchNote.hidden = false;
+    csvMatchNote.innerHTML = '⚠️ Fag i CSV der ikke matcher Excel-kolonner: <strong>' + noMatch.map(esc).join(', ') + '</strong>';
+  } else {
+    csvMatchNote.hidden = false;
+    csvMatchNote.innerHTML = '✅ Alle ' + csvFag.length + ' fag fra CSV matcher Excel-kolonner - lektionstal er udfyldt automatisk';
+  }
+}
+
+// ═══════════════════════════════════════
+// SHARED MATH
+// ═══════════════════════════════════════
+function project(cur, held, total) {
+  const rem    = Math.max(0, total - held);
+  const missed = (cur / 100) * held;
+  return {
+    best:  total > 0 ? Math.min(100, (missed / total) * 100)            : 0,
+    worst: total > 0 ? Math.min(100, ((missed + rem) / total) * 100)    : cur,
+  };
+}
+
+function classify(cur, best) {
+  if (best > 20)    return 'red';
+  if (cur  >= 15)   return 'amber';
+  if (cur  >= 10)   return 'yellow';
+  return 'green';
+}
+
+function statusObj(cur, best) {
+  const k = classify(cur, best);
+  const map = {
+    red:    { key:'red',    label:'Afhjælpningsprøve garanteret', dot:'🔴' },
+    amber:  { key:'amber',  label:'I risiko',                     dot:'🟠' },
+    yellow: { key:'yellow', label:'Følg op',                      dot:'🟡' },
+    green:  { key:'green',  label:'OK',                           dot:'🟢' },
+  };
+  return map[k];
+}
+
+function barFill(p) { return p > 20 ? 'f-red' : p >= 15 ? 'f-amber' : p >= 10 ? 'f-yellow' : 'f-green'; }
+function fmt(n) { return n.toFixed(1) + ' %'; }
+
+// ═══════════════════════════════════════
+// TAB: HOLDOVERBLIK
+// ═══════════════════════════════════════
+function buildOverblikConfig() {
+  const saved = lsGetObj('frv-overblik-cfg');
+  cfgRowsEl.innerHTML = subjectCols.map(({label}) => {
+    const s = saved[label] || {};
+    return `<div class="cfg-row" data-label="${esc(label)}">
+      <span class="cfg-row-label" title="${esc(label)}">${esc(label)}</span>
+      <input class="inp-cfg-total" type="number" value="${s.total||40}" min="1" max="999" aria-label="I alt">
+      <input class="inp-cfg-held"  type="number" value="${s.held||''}"  min="0" max="999" placeholder="0" aria-label="Afviklet">
+    </div>`;
+  }).join('');
+}
+
+function saveOverblikConfig() {
+  const cfg = {};
+  document.querySelectorAll('.cfg-row').forEach(row => {
+    const label = row.dataset.label;
+    cfg[label] = {
+      total: parseInt(row.querySelector('.inp-cfg-total').value) || 40,
+      held:  parseInt(row.querySelector('.inp-cfg-held').value)  || 0,
+    };
+  });
+  lsSetObj('frv-overblik-cfg', cfg);
+  return cfg;
+}
+
+function renderOverblik() {
+  const cfg = saveOverblikConfig();
+  const rows = subjectCols.map(({idx, label}) => {
+    const {total, held} = cfg[label] || {total:40, held:0};
+    const t = Math.max(1, total);
+    const h = Math.min(Math.max(0, held), t);
+    const counts = {red:0, amber:0, yellow:0, green:0};
+    rawRows.slice(1).filter(r => String(r[nameCol]||'').trim()).forEach(r => {
+      const cur = parseFloat(r[idx]) || 0;
+      const {best} = project(cur, h, t);
+      counts[classify(cur, best)]++;
+    });
+    return {label, total:t, held:h, counts};
+  });
+
+  rows.sort((a,b) => {
+    if (b.counts.red   !== a.counts.red)   return b.counts.red   - a.counts.red;
+    if (b.counts.amber !== a.counts.amber) return b.counts.amber - a.counts.amber;
+    return a.label.localeCompare(b.label, 'da');
+  });
+
+  overblikTbody.innerHTML = rows.map(({label, total, held, counts}) => {
+    const n = counts.red + counts.amber + counts.yellow + counts.green;
+    const sev = counts.red > 0 ? 'red' : counts.amber > 0 ? 'amber' : counts.yellow > 0 ? 'yellow' : 'green';
+    const w = k => n > 0 ? (counts[k]/n*100).toFixed(1) : '0';
+    const cnt = (k, cls) => `<td class="td-count ${counts[k]>0?cls:'zero'}">${counts[k]}</td>`;
+    return `<tr class="s-${sev}">
+      <td class="td-fag">${esc(label)}</td>
+      <td class="td-lek">${held} / ${total}</td>
+      ${cnt('red','c-red')}${cnt('amber','c-amber')}${cnt('yellow','c-yellow')}${cnt('green','c-green')}
+      <td><div class="dist-bar">
+        <div class="dist-seg seg-red"    style="width:${w('red')}%"></div>
+        <div class="dist-seg seg-amber"  style="width:${w('amber')}%"></div>
+        <div class="dist-seg seg-yellow" style="width:${w('yellow')}%"></div>
+        <div class="dist-seg seg-green"  style="width:${w('green')}%"></div>
+      </div></td>
+    </tr>`;
+  }).join('');
+
+  overblikRes.hidden = false;
+}
+
+btnOverblik.addEventListener('click', renderOverblik);
+
+// ═══════════════════════════════════════
+// TAB: FAGDETALJER
+// ═══════════════════════════════════════
+function buildDetaljerSelect() {
+  const savedSubject = lsGet('frv-subject', '');
+  inpFag.innerHTML = subjectCols.map(({idx, label}) =>
+    `<option value="${idx}" ${label === savedSubject ? 'selected' : ''}>${esc(label)}</option>`
+  ).join('');
+}
+
+function renderDetaljer() {
+  const colIdx = parseInt(inpFag.value);
+  const label  = colHeaders[colIdx] || '';
+  const total  = Math.max(1, parseInt(inpTotal.value) || 40);
+  const held   = Math.min(Math.max(0, parseInt(inpHeld.value) || 0), total);
+
+  lsSet('frv-total', inpTotal.value);
+  lsSet('frv-held',  inpHeld.value);
+  lsSet('frv-subject', label);
+
+  // Find the id column (brugernavn)
+  const idIdx = colHeaders.findIndex(h => h.toLowerCase().includes('brugernavn'));
+  const enriched = rawRows.slice(1)
+    .filter(r => String(r[nameCol]||'').trim())
+    .map(r => {
+      const cur = parseFloat(r[colIdx]) || 0;
+      const {best, worst} = project(cur, held, total);
+      return {
+        name:  String(r[nameCol]||'').trim(),
+        id:    idIdx >= 0 ? String(r[idIdx]||'').trim() : '',
+        cur, best, worst,
+        st:    statusObj(cur, best),
+      };
+    });
+
+  // Tiles
+  const counts = {red:0, amber:0, yellow:0, green:0};
+  enriched.forEach(s => counts[s.st.key]++);
+  tileRow.innerHTML =
+    mkTile('Afhjælpningsprøve garanteret', counts.red,    'c-red')   +
+    mkTile('I risiko',                     counts.amber,  'c-amber') +
+    mkTile('Følg op',                      counts.yellow, 'c-yellow')+
+    mkTile('OK',                           counts.green,  'c-green');
+
+  // Sort
+  const sorted = [...enriched].sort((a,b) =>
+    detSortKey === 'name' ? a.name.localeCompare(b.name,'da') : b.cur - a.cur
+  );
+
+  detaljerTitle.textContent = label;
+
+  detaljerTbody.innerHTML = sorted.map(s => `
+    <tr class="s-${s.st.key}">
+      <td>
+        <div class="td-name">${esc(s.name)}</div>
+        ${s.id ? `<div class="td-id">${esc(s.id)}</div>` : ''}
+      </td>
+      <td class="pct-cell"><div class="pct-inner">
+        <div class="mini-bar"><div class="mini-fill ${barFill(s.cur)}" style="width:${Math.min(100,s.cur)}%"></div></div>
+        <span class="pct-num">${fmt(s.cur)}</span>
+      </div></td>
+      <td class="pct-cell"><div class="pct-inner">
+        <div class="mini-bar"><div class="mini-fill ${barFill(s.best)}" style="width:${Math.min(100,s.best)}%"></div></div>
+        <span class="pct-num">${fmt(s.best)}</span>
+      </div></td>
+      <td class="pct-cell"><div class="pct-inner">
+        <div class="mini-bar wc"><div class="mini-fill ${barFill(s.worst)}" style="width:${Math.min(100,s.worst)}%"></div></div>
+        <span class="pct-num wc">${fmt(s.worst)}</span>
+      </div></td>
+      <td><span class="badge badge-${s.st.key}">${s.st.dot} ${s.st.label}</span></td>
+    </tr>`).join('');
+
+  detaljerRes.hidden = false;
+}
+
+btnDetaljer.addEventListener('click', renderDetaljer);
+inpFag.addEventListener('change', () => {
+  applyScheduleToDetaljer();
+  if (!detaljerRes.hidden) renderDetaljer();
+});
+[inpTotal, inpHeld].forEach(inp => inp.addEventListener('change', () => { if (!detaljerRes.hidden) renderDetaljer(); }));
+
+// Sort buttons in detaljer
+document.querySelectorAll('#tab-detaljer .tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#tab-detaljer .tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    detSortKey = btn.dataset.sort;
+    if (!detaljerRes.hidden) renderDetaljer();
+  });
+});
+
+// ═══════════════════════════════════════
+// TAB: STUDERENDE (matrix)
+// ═══════════════════════════════════════
+let matSortKey = 'score';
+
+function renderMatrix() {
+  if (!rawRows.length) return;
+
+  // Get lektionstal from cfg-rows (populated from CSV or manually)
+  const cfg = {};
+  document.querySelectorAll('.cfg-row').forEach(row => {
+    cfg[row.dataset.label] = {
+      total: parseInt(row.querySelector('.inp-cfg-total').value) || 40,
+      held:  parseInt(row.querySelector('.inp-cfg-held').value)  || 0,
+    };
+  });
+
+  const hasProjection = Object.values(cfg).some(c => c.held > 0);
+  const idIdx = colHeaders.findIndex(h => h.toLowerCase().includes('brugernavn'));
+
+  const students = rawRows.slice(1)
+    .filter(r => String(r[nameCol]||'').trim())
+    .map(r => {
+      const name = String(r[nameCol]||'').trim();
+      const id   = idIdx >= 0 ? String(r[idIdx]||'').trim() : '';
+      const cells = subjectCols.map(({idx, label}) => {
+        const cur = parseFloat(r[idx]) || 0;
+        const {total, held} = cfg[label] || {total:40, held:0};
+        const t = Math.max(1, total), h = Math.min(Math.max(0, held), t);
+        const {best} = project(cur, h, t);
+        const status = classify(cur, best);
+        return {cur, status};
+      });
+      // Score: red=8, amber=4, yellow=1, green=0 — weighted so one red outweighs multiple ambers
+      const score = cells.reduce((s, c) => s + {red:8, amber:4, yellow:1, green:0}[c.status], 0);
+      return {name, id, cells, score};
+    });
+
+  // Sort
+  students.sort((a,b) =>
+    matSortKey === 'name'
+      ? a.name.localeCompare(b.name, 'da')
+      : b.score - a.score || a.name.localeCompare(b.name, 'da')
+  );
+
+  // Header
+  document.getElementById('matrix-head').innerHTML =
+    '<tr>' +
+    '<th style="min-width:160px">Studerende</th>' +
+    subjectCols.map(({label}) =>
+      `<th class="c" title="${esc(label)}" style="max-width:130px;overflow:hidden;text-overflow:ellipsis">${esc(label)}</th>`
+    ).join('') +
+    '</tr>';
+
+  // Rows
+  const dotColor = {red:'🔴', amber:'🟠', yellow:'🟡', green:'🟢'};
+  document.getElementById('matrix-body').innerHTML = students.map(s => {
+    const rowStatus = s.cells.reduce((worst, c) => {
+      const order = ['green','yellow','amber','red'];
+      return order.indexOf(c.status) > order.indexOf(worst) ? c.status : worst;
+    }, 'green');
+    const dots = s.cells.map(c => dotColor[c.status]).join('');
+    return `<tr class="s-${rowStatus}">
+      <td class="td-mat-name">
+        <div class="td-name">${esc(s.name)}</div>
+        ${s.id ? `<div class="td-id">${esc(s.id)}</div>` : ''}
+      </td>
+      ${s.cells.map(c => {
+        const cl = c.cur === 0 ? 'mc-zero' : 'mc-' + c.status;
+        const txt = c.cur === 0 ? '-' : fmt(c.cur);
+        return `<td class="mc ${cl}">${txt}</td>`;
+      }).join('')}
+    </tr>`;
+  }).join('');
+
+  document.getElementById('studerende-title').textContent =
+    students.length + ' studerende · ' + subjectCols.length + ' fag';
+
+  document.getElementById('matrix-note').innerHTML =
+    hasProjection
+      ? '🔴 Best case > 20% · 🟠 Nuværende ≥ 15% · 🟡 Nuværende ≥ 10% · Farver baseret på projektioner fra konfigureret lektionsplan'
+      : '⚠️ Ingen lektionstal konfigureret - farver baseret kun på nuværende % uden projektioner. Upload TimeEdit CSV eller udfyld Holdoverblik for fulde projektioner.';
+
+  document.getElementById('studerende-results').hidden = false;
+}
+
+// Sort buttons in studerende
+document.querySelectorAll('#tab-studerende .tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#tab-studerende .tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    matSortKey = btn.dataset.msort;
+    if (!document.getElementById('studerende-results').hidden) renderMatrix();
+  });
+});
+
+// ═══════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════
+document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    if (tab === 'studerende' && rawRows.length) renderMatrix();
+  });
+});
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function mkTile(label, count, cls) {
+  return `<div class="tile">
+    <span class="tile-label">${label}</span>
+    <span class="tile-val ${cls}">${count}</span>
+  </div>`;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
