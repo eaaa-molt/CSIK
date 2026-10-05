@@ -587,7 +587,7 @@ function loadFile(file) {
       if (nameCol === -1) { alert('Kolonne "Visningsnavn" ikke fundet.'); return; }
 
       const skip = new Set([nameCol, idIdx].filter(i => i >= 0));
-      subjectCols = colHeaders.map((label, idx) => ({idx, label})).filter(({idx, label}) => !skip.has(idx) && label.trim());
+      subjectCols = colHeaders.map((label, idx) => ({idx, label: label.replace(/\s*\(Fraværsprocent\)/gi, '').trim()})).filter(({idx, label}) => !skip.has(idx) && label);
       if (!subjectCols.length) { alert('Ingen fagkolonner fundet.'); return; }
 
       const n = rawRows.slice(1).filter(r => String(r[nameCol]||'').trim()).length;
