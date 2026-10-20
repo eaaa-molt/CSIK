@@ -360,7 +360,7 @@ td { padding: 10px 14px; vertical-align: middle; }
         </div>
       </div>
       <div>
-        <span class="upload-label">TimeEdit CSV - Lektionsplan <span>(valgfri)</span></span>
+        <span class="upload-label">TimeEdit CSV - Lektionsplan <span>(valgfri — til totalt lektionstal)</span></span>
         <div class="drop-zone" id="csv-zone">
           <input type="file" id="csv-input" accept=".csv,.txt">
           <div class="drop-icon" id="csv-icon">📅</div>
@@ -503,12 +503,13 @@ td { padding: 10px 14px; vertical-align: middle; }
 // ═══════════════════════════════════════
 // SHARED STATE
 // ═══════════════════════════════════════
-let rawRows     = [];
-let colHeaders  = [];
-let nameCol     = -1;
-let subjectCols = []; // [{idx, label}]
-let detSortKey  = 'current';
+let rawRows      = [];
+let colHeaders   = [];
+let nameCol      = -1;
+let subjectCols  = []; // [{idx, label}]
+let detSortKey   = 'current';
 let scheduleData = {}; // { fagLabel: { total, held } } — populated from TimeEdit CSV
+let excelHeld    = {}; // { fagLabel: held_lektioner } — populated from Excel Varighed columns
 
 // ═══════════════════════════════════════
 // REFS
@@ -587,7 +588,38 @@ function loadFile(file) {
       if (nameCol === -1) { alert('Kolonne "Visningsnavn" ikke fundet.'); return; }
 
       const skip = new Set([nameCol, idIdx].filter(i => i >= 0));
-      subjectCols = colHeaders.map((label, idx) => ({idx, label: label.replace(/\s*\(Fraværsprocent\)/gi, '').trim()})).filter(({idx, label}) => !skip.has(idx) && label);
+
+      // Byg subjectCols: KUN kolonner med (Fraværsprocent) i navnets
+      // — understøtter både gammel format (kun %-kolonne) og nyt format
+      //   (tre kolonner per fag: Fraværsprocent, Varighed, Fraværstid)
+      subjectCols = [];
+      excelHeld   = {};
+
+      colHeaders.forEach((h, idx) => {
+        if (skip.has(idx)) return;
+        // Gammel format: ingen parentes → inkluder som fag-kolonne
+        // Nyt format: kun (Fraværsprocent)-kolonner → inkluder, resten springes over
+        const hasPct     = /\(Fraværsprocent\)/i.test(h);
+        const hasParens  = /\(/.test(h);
+        if (hasParens && !hasPct) return; // (Varighed, min) og (Fraværstid, min) springes over
+
+        const label = h.replace(/\s*\(Fraværsprocent\)/gi, '').trim();
+        if (!label) return;
+        subjectCols.push({ idx, label });
+
+        // Beregn afviklet fra (Varighed, min)-kolonne hvis den findes
+        const varighedCol = label + ' (Varighed, min)';
+        const vIdx = colHeaders.findIndex(h2 => h2 === varighedCol);
+        if (vIdx >= 0) {
+          const dataRows = rawRows.slice(1).filter(r => String(r[nameCol]||'').trim());
+          const maxMin   = Math.max(0, ...dataRows.map(r => parseFloat(r[vIdx]) || 0));
+          if (maxMin > 0) {
+            // 1 lektion = 45 min (1 par/modul = 90 min = 2 lektioner)
+            excelHeld[label] = Math.round(maxMin / 45);
+          }
+        }
+      });
+
       if (!subjectCols.length) { alert('Ingen fagkolonner fundet.'); return; }
 
       const n = rawRows.slice(1).filter(r => String(r[nameCol]||'').trim()).length;
@@ -599,7 +631,9 @@ function loadFile(file) {
       buildOverblikConfig();
       buildDetaljerSelect();
       mainSection.hidden = false;
-      if (Object.keys(scheduleData).length) { applySchedule(); showMatchNote(); }
+
+      if (Object.keys(scheduleData).length) applySchedule();
+      showMatchNote();
 
     } catch(err) { alert('Fejl ved indlæsning: ' + err.message); }
   };
@@ -607,7 +641,7 @@ function loadFile(file) {
 }
 
 // ═══════════════════════════════════════
-// LOAD CSV (TimeEdit)
+// LOAD CSV (TimeEdit) — bruges til totalt lektionstal
 // ═══════════════════════════════════════
 function parseCSVLine(line) {
   const result = []; let inQ = false, cur = '';
@@ -632,7 +666,6 @@ function loadCSV(file) {
   reader.onload = ev => {
     try {
       const lines = ev.target.result.split(/\r?\n/);
-      // Find the header row
       let headerIdx = -1;
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].includes('Startdato')) { headerIdx = i; break; }
@@ -645,7 +678,7 @@ function loadCSV(file) {
       if (colFag < 0 || colDate < 0) { alert('Kolonner "Fag" og/eller "Startdato" ikke fundet i CSV.'); return; }
 
       const today = new Date();
-      today.setHours(23, 59, 59, 999); // hele dagen tæller som afviklet
+      today.setHours(23, 59, 59, 999);
 
       const counts = {};
       for (let i = headerIdx + 1; i < lines.length; i++) {
@@ -653,13 +686,19 @@ function loadCSV(file) {
         if (!line) continue;
         const cols = parseCSVLine(line);
         const fag  = (cols[colFag] || '').trim();
-        if (!fag) continue; // ingen fag = ikke en lektion (IT-fest osv.)
+        if (!fag) continue;
         const date = parseDMY(cols[colDate] || '');
         if (!date) continue;
         if (!counts[fag]) counts[fag] = { total: 0, held: 0 };
         counts[fag].total++;
         if (date <= today) counts[fag].held++;
       }
+
+      // Omregn fra rækker (moduler) til lektioner: 1 modul = 2 lektioner
+      Object.keys(counts).forEach(fag => {
+        counts[fag].total *= 2;
+        counts[fag].held  *= 2;
+      });
 
       scheduleData = counts;
       const fagCount = Object.keys(counts).length;
@@ -675,38 +714,63 @@ function loadCSV(file) {
 }
 
 function applySchedule() {
-  // Fill overblik config rows
+  // Fra TimeEdit CSV: sæt KUN "I alt" (total) i overblik-konfigurationen.
+  // "Afviklet" (held) sættes fra excelHeld (Varighed-kolonne) — CSV-held bruges kun som fallback.
   document.querySelectorAll('.cfg-row').forEach(row => {
-    const s = scheduleData[row.dataset.label];
+    const label = row.dataset.label;
+    const s = scheduleData[label];
     if (s) {
       row.querySelector('.inp-cfg-total').value = s.total;
-      row.querySelector('.inp-cfg-held').value  = s.held;
+      // Brug kun CSV's held-værdi hvis Excel ikke har beregnet den
+      if (excelHeld[label] === undefined) {
+        row.querySelector('.inp-cfg-held').value = s.held;
+      }
     }
   });
-  // Fill detaljer inputs for current selection
   applyScheduleToDetaljer();
-  // Show match report
   showMatchNote();
 }
 
 function applyScheduleToDetaljer() {
-  if (!Object.keys(scheduleData).length) return;
-  const label = colHeaders[parseInt(inpFag.value)] || '';
+  const colIdx = parseInt(inpFag.value);
+  const sc     = subjectCols.find(s => s.idx === colIdx);
+  const label  = sc ? sc.label : '';
+
+  // Total fra TimeEdit CSV
   const s = scheduleData[label];
-  if (s) { inpTotal.value = s.total; inpHeld.value = s.held; }
+  if (s) inpTotal.value = s.total;
+
+  // Afviklet: Excel Varighed (foretrukket) eller CSV-held som fallback
+  if (excelHeld[label] !== undefined) {
+    inpHeld.value = excelHeld[label];
+  } else if (s) {
+    inpHeld.value = s.held;
+  }
 }
 
 function showMatchNote() {
-  const csvFag   = Object.keys(scheduleData);
+  const parts = [];
   const excelFag = subjectCols.map(sc => sc.label);
-  const noMatch  = csvFag.filter(f => !excelFag.includes(f));
-  if (noMatch.length) {
-    csvMatchNote.hidden = false;
-    csvMatchNote.innerHTML = '⚠️ Fag i CSV der ikke matcher Excel-kolonner: <strong>' + noMatch.map(esc).join(', ') + '</strong>';
-  } else {
-    csvMatchNote.hidden = false;
-    csvMatchNote.innerHTML = '✅ Alle ' + csvFag.length + ' fag fra CSV matcher Excel-kolonner - lektionstal er udfyldt automatisk';
+
+  // Vis Excel-beregnet afviklet
+  const excelHeldCount = Object.keys(excelHeld).length;
+  if (excelHeldCount > 0) {
+    parts.push('📊 Afviklet lektioner beregnet automatisk fra Excel for ' + excelHeldCount + ' fag');
   }
+
+  // Vis CSV-match status
+  const csvFag = Object.keys(scheduleData);
+  if (csvFag.length > 0) {
+    const noMatch = csvFag.filter(f => !excelFag.includes(f));
+    if (noMatch.length) {
+      parts.push('⚠️ Fag i CSV der ikke matcher Excel: <strong>' + noMatch.map(esc).join(', ') + '</strong>');
+    } else {
+      parts.push('✅ ' + csvFag.length + ' fag fra CSV matcher Excel — totalt lektionstal opdateret');
+    }
+  }
+
+  csvMatchNote.hidden = parts.length === 0;
+  if (parts.length) csvMatchNote.innerHTML = parts.join(' &nbsp;·&nbsp; ');
 }
 
 // ═══════════════════════════════════════
@@ -749,10 +813,12 @@ function buildOverblikConfig() {
   const saved = lsGetObj('frv-overblik-cfg');
   cfgRowsEl.innerHTML = subjectCols.map(({label}) => {
     const s = saved[label] || {};
+    // Afviklet: Excel-beregnet foretrækkes, derefter gemt, derefter tomt
+    const heldVal = excelHeld[label] !== undefined ? excelHeld[label] : (s.held || '');
     return `<div class="cfg-row" data-label="${esc(label)}">
       <span class="cfg-row-label" title="${esc(label)}">${esc(label)}</span>
       <input class="inp-cfg-total" type="number" value="${s.total||40}" min="1" max="999" aria-label="I alt">
-      <input class="inp-cfg-held"  type="number" value="${s.held||''}"  min="0" max="999" placeholder="0" aria-label="Afviklet">
+      <input class="inp-cfg-held"  type="number" value="${heldVal}"     min="0" max="999" placeholder="0" aria-label="Afviklet">
     </div>`;
   }).join('');
 }
@@ -822,11 +888,14 @@ function buildDetaljerSelect() {
   inpFag.innerHTML = subjectCols.map(({idx, label}) =>
     `<option value="${idx}" ${label === savedSubject ? 'selected' : ''}>${esc(label)}</option>`
   ).join('');
+  // Auto-udfyld afviklet for det valgte fag
+  applyScheduleToDetaljer();
 }
 
 function renderDetaljer() {
   const colIdx = parseInt(inpFag.value);
-  const label  = colHeaders[colIdx] || '';
+  const sc     = subjectCols.find(s => s.idx === colIdx);
+  const label  = sc ? sc.label : '';
   const total  = Math.max(1, parseInt(inpTotal.value) || 40);
   const held   = Math.min(Math.max(0, parseInt(inpHeld.value) || 0), total);
 
@@ -834,7 +903,6 @@ function renderDetaljer() {
   lsSet('frv-held',  inpHeld.value);
   lsSet('frv-subject', label);
 
-  // Find the id column (brugernavn)
   const idIdx = colHeaders.findIndex(h => h.toLowerCase().includes('brugernavn'));
   const enriched = rawRows.slice(1)
     .filter(r => String(r[nameCol]||'').trim())
@@ -858,7 +926,6 @@ function renderDetaljer() {
     mkTile('Følg op',                      counts.yellow, 'c-yellow')+
     mkTile('OK',                           counts.green,  'c-green');
 
-  // Sort
   const sorted = [...enriched].sort((a,b) =>
     detSortKey === 'name' ? a.name.localeCompare(b.name,'da') : b.cur - a.cur
   );
@@ -914,7 +981,6 @@ let matSortKey = 'score';
 function renderMatrix() {
   if (!rawRows.length) return;
 
-  // Get lektionstal from cfg-rows (populated from CSV or manually)
   const cfg = {};
   document.querySelectorAll('.cfg-row').forEach(row => {
     cfg[row.dataset.label] = {
@@ -939,19 +1005,16 @@ function renderMatrix() {
         const status = classify(cur, best);
         return {cur, status};
       });
-      // Score: red=8, amber=4, yellow=1, green=0 — weighted so one red outweighs multiple ambers
       const score = cells.reduce((s, c) => s + {red:8, amber:4, yellow:1, green:0}[c.status], 0);
       return {name, id, cells, score};
     });
 
-  // Sort
   students.sort((a,b) =>
     matSortKey === 'name'
       ? a.name.localeCompare(b.name, 'da')
       : b.score - a.score || a.name.localeCompare(b.name, 'da')
   );
 
-  // Header
   document.getElementById('matrix-head').innerHTML =
     '<tr>' +
     '<th style="min-width:160px">Studerende</th>' +
@@ -960,14 +1023,12 @@ function renderMatrix() {
     ).join('') +
     '</tr>';
 
-  // Rows
   const dotColor = {red:'🔴', amber:'🟠', yellow:'🟡', green:'🟢'};
   document.getElementById('matrix-body').innerHTML = students.map(s => {
     const rowStatus = s.cells.reduce((worst, c) => {
       const order = ['green','yellow','amber','red'];
       return order.indexOf(c.status) > order.indexOf(worst) ? c.status : worst;
     }, 'green');
-    const dots = s.cells.map(c => dotColor[c.status]).join('');
     return `<tr class="s-${rowStatus}">
       <td class="td-mat-name">
         <div class="td-name">${esc(s.name)}</div>

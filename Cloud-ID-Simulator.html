@@ -742,6 +742,12 @@ input:checked + .toggle-track::after { transform: translateX(16px); }
         <svg viewBox="0 0 16 16"><path d="M8 0C5.2 0 3 2.2 3 5c0 4.2 5 11 5 11s5-6.8 5-11c0-2.8-2.2-5-5-5zm0 7.5C6.6 7.5 5.5 6.4 5.5 5S6.6 2.5 8 2.5 10.5 3.6 10.5 5 9.4 7.5 8 7.5z"/></svg>
         Named Locations
       </div>
+      <div class="nav-section-label">Privileged Access</div>
+      <div class="nav-item" data-page="pim" onclick="navigate('pim')">
+        <svg viewBox="0 0 16 16"><path d="M8 1l6 2.7v4.4C14 12 11.5 14.6 8 15.5 4.5 14.6 2 12 2 8.1V3.7L8 1z"/></svg>
+        PIM
+        <span class="nav-badge" id="nav-badge-pim" style="display:none">0</span>
+      </div>
       <div class="nav-section-label">Identitet</div>
       <div class="nav-item" data-page="users" onclick="navigate('users')">
         <svg viewBox="0 0 16 16"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zm-5 6a5 5 0 0110 0H3z"/></svg>
@@ -750,6 +756,10 @@ input:checked + .toggle-track::after { transform: translateX(16px); }
       <div class="nav-item" data-page="groups" onclick="navigate('groups')">
         <svg viewBox="0 0 16 16"><path d="M5.5 7a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm5 0a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM0 14c0-2.5 2-4.5 5.5-4.5S11 11.5 11 14v.5H0V14zm10.2-4.2c1.7.6 2.8 2.1 2.8 4.2v.5h3v-.5c0-2.1-1.6-3.9-3.7-4.2-.7 0-1.4.02-2.1 0z"/></svg>
         Grupper
+      </div>
+      <div class="nav-item" data-page="pwpolicy" onclick="navigate('pwpolicy')">
+        <svg viewBox="0 0 16 16"><path d="M12 6h-1V4a3 3 0 10-6 0v2H4a1 1 0 00-1 1v7a1 1 0 001 1h8a1 1 0 001-1V7a1 1 0 00-1-1zM6.5 4a1.5 1.5 0 013 0v2h-3V4z"/></svg>
+        Password-politik
       </div>
       <div class="nav-section-label">Overvågning</div>
       <div class="nav-item" data-page="logs" onclick="navigate('logs')">
@@ -827,14 +837,14 @@ const db = {
   currentPage: 'overview',
 
   users: [
-    { id:'u-anna',    name:'Anna Nielsen',       email:'anna.nielsen@contoso.com',    groups:['g-all','g-employees'],                      mfaRegistered:true,  deviceCompliant:false, guestUser:false, dept:'Salg',        role:'Account Manager' },
-    { id:'u-bjorn',   name:'Bjørn Hansen',        email:'bjorn.hansen@contoso.com',    groups:['g-all','g-employees','g-it'],               mfaRegistered:true,  deviceCompliant:true,  guestUser:false, dept:'IT',          role:'IT-administrator' },
-    { id:'u-cecilie', name:'Cecilie Madsen',      email:'cecilie.madsen@contoso.com',  groups:['g-all','g-employees','g-executives'],       mfaRegistered:true,  deviceCompliant:true,  guestUser:false, dept:'Ledelse',     role:'CEO' },
-    { id:'u-david',   name:'David Larsen',        email:'david.larsen@contoso.com',    groups:['g-all','g-employees'],                      mfaRegistered:false, deviceCompliant:false, guestUser:false, dept:'Salg',        role:'Sales Representative' },
-    { id:'u-eva',     name:'Eva Christensen',     email:'eva.christensen@partner.dk',  groups:['g-guests'],                                 mfaRegistered:false, deviceCompliant:false, guestUser:true,  dept:'Ekstern',     role:'Partner Contact' },
-    { id:'u-admin',   name:'Kasper Lindberg',     email:'kasper.lindberg@contoso.com', groups:['g-all','g-employees','g-it'],               mfaRegistered:true,  deviceCompliant:true,  guestUser:false, dept:'IT',          role:'Global Administrator', isAdmin:true },
-    { id:'u-sofia',   name:'Sofia Andersen',      email:'sofia.andersen@nexusconsulting.se', groups:['g-guests'],                            mfaRegistered:false, deviceCompliant:false, guestUser:true,  dept:'Ekstern',     role:'Ekstern konsulent (Nexus Consulting)' },
-    { id:'u-breakglass', name:'Nødberedskab Contoso', email:'breakglass@contoso.com',   groups:['g-breakglass'],                              mfaRegistered:false, deviceCompliant:false, guestUser:false, dept:'IT',          role:'Break-Glass / Nødadgangskonto', isBreakGlass:true },
+    { id:'u-anna',    name:'Anna Nielsen',       email:'anna.nielsen@contoso.com',    groups:['g-all','g-employees'],                      mfaRegistered:true,  deviceCompliant:false, guestUser:false, dept:'Salg',        role:'Account Manager', passwordLength:12, passwordComplex:true, pimEligibleRoles:[] },
+    { id:'u-bjorn',   name:'Bjørn Hansen',        email:'bjorn.hansen@contoso.com',    groups:['g-all','g-employees','g-it'],               mfaRegistered:true,  deviceCompliant:true,  guestUser:false, dept:'IT',          role:'IT-administrator', passwordLength:14, passwordComplex:true, pimEligibleRoles:['role-ga'] },
+    { id:'u-cecilie', name:'Cecilie Madsen',      email:'cecilie.madsen@contoso.com',  groups:['g-all','g-employees','g-executives'],       mfaRegistered:true,  deviceCompliant:true,  guestUser:false, dept:'Ledelse',     role:'CEO', passwordLength:14, passwordComplex:true, pimEligibleRoles:[] },
+    { id:'u-david',   name:'David Larsen',        email:'david.larsen@contoso.com',    groups:['g-all','g-employees'],                      mfaRegistered:false, deviceCompliant:false, guestUser:false, dept:'Salg',        role:'Sales Representative', passwordLength:10, passwordComplex:true, pimEligibleRoles:[] },
+    { id:'u-eva',     name:'Eva Christensen',     email:'eva.christensen@partner.dk',  groups:['g-guests'],                                 mfaRegistered:false, deviceCompliant:false, guestUser:true,  dept:'Ekstern',     role:'Partner Contact', passwordLength:9, passwordComplex:true, pimEligibleRoles:[] },
+    { id:'u-admin',   name:'Kasper Lindberg',     email:'kasper.lindberg@contoso.com', groups:['g-all','g-employees','g-it'],               mfaRegistered:true,  deviceCompliant:true,  guestUser:false, dept:'IT',          role:'Global Administrator', isAdmin:true, passwordLength:16, passwordComplex:true, pimEligibleRoles:['role-ga'] },
+    { id:'u-sofia',   name:'Sofia Andersen',      email:'sofia.andersen@nexusconsulting.se', groups:['g-guests'],                            mfaRegistered:false, deviceCompliant:false, guestUser:true,  dept:'Ekstern',     role:'Ekstern konsulent (Nexus Consulting)', passwordLength:9, passwordComplex:true, pimEligibleRoles:[] },
+    { id:'u-breakglass', name:'Nødberedskab Contoso', email:'breakglass@contoso.com',   groups:['g-breakglass'],                              mfaRegistered:false, deviceCompliant:false, guestUser:false, dept:'IT',          role:'Break-Glass / Nødadgangskonto', isBreakGlass:true, passwordLength:6, passwordComplex:false, pimEligibleRoles:[] },
   ],
 
   groups: [
@@ -868,42 +878,42 @@ const db = {
       id:'pol-1', name:'Kræv MFA for alle brugere', state:'enabled',
       users:{ includeAll:true, includeGroups:[], includeUsers:[], excludeGroups:[], excludeUsers:['u-admin'] },
       apps:{ includeAll:true, includeApps:[], excludeApps:[] },
-      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:false,levels:[]} },
+      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:false,levels:[]}, activeRole:{enabled:false,roleId:null} },
       grant:{ operator:'OR', controls:['mfa'] }
     },
     {
       id:'pol-2', name:'Bloker ældre godkendelsesmetoder', state:'enabled',
       users:{ includeAll:true, includeGroups:[], includeUsers:[], excludeGroups:[], excludeUsers:[] },
       apps:{ includeAll:true, includeApps:[], excludeApps:[] },
-      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:true,apps:['exchangeActivesync','other']}, signInRisk:{enabled:false,levels:[]} },
+      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:true,apps:['exchangeActivesync','other']}, signInRisk:{enabled:false,levels:[]}, activeRole:{enabled:false,roleId:null} },
       grant:{ operator:'OR', controls:['block'] }
     },
     {
       id:'pol-3', name:'Kræv kompatibel enhed – Azure Management', state:'reportOnly',
       users:{ includeAll:true, includeGroups:[], includeUsers:[], excludeGroups:[], excludeUsers:[] },
       apps:{ includeAll:false, includeApps:['app-azure'], excludeApps:[] },
-      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:false,levels:[]} },
+      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:false,levels:[]}, activeRole:{enabled:false,roleId:null} },
       grant:{ operator:'AND', controls:['mfa','compliantDevice'] }
     },
     {
       id:'pol-4', name:'Bloker høj-risiko logins', state:'enabled',
       users:{ includeAll:true, includeGroups:[], includeUsers:[], excludeGroups:[], excludeUsers:[] },
       apps:{ includeAll:true, includeApps:[], excludeApps:[] },
-      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:true,levels:['high']} },
+      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:true,levels:['high']}, activeRole:{enabled:false,roleId:null} },
       grant:{ operator:'OR', controls:['block'] }
     },
     {
       id:'pol-5', name:'Kræv MFA – gæstebrugere', state:'enabled',
       users:{ includeAll:false, includeGroups:['g-guests'], includeUsers:[], excludeGroups:[], excludeUsers:[] },
       apps:{ includeAll:true, includeApps:[], excludeApps:[] },
-      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:false,levels:[]} },
+      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:false,levels:[]}, activeRole:{enabled:false,roleId:null} },
       grant:{ operator:'OR', controls:['mfa'] }
     },
     {
       id:'pol-6', name:'Bloker ukendte lokationer – Ledelse', state:'enabled',
       users:{ includeAll:false, includeGroups:['g-executives'], includeUsers:[], excludeGroups:[], excludeUsers:[] },
       apps:{ includeAll:true, includeApps:[], excludeApps:[] },
-      conditions:{ locations:{enabled:true,includeAll:true,includeLocations:[],excludeLocations:['loc-office','loc-dk']}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:false,levels:[]} },
+      conditions:{ locations:{enabled:true,includeAll:true,includeLocations:[],excludeLocations:['loc-office','loc-dk']}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:false,levels:[]}, activeRole:{enabled:false,roleId:null} },
       grant:{ operator:'OR', controls:['block'] }
     },
   ],
@@ -911,6 +921,19 @@ const db = {
   signInLogs: [],
   nextPolicyId: 7,
   nextGroupId: 1,
+
+  // ── PIM / Privileged Identity Management ──────────────────────────────
+  pimRoles: [
+    { id:'role-ga', name:'Global Administrator', desc:'Fuld administrativ adgang til hele Entra ID-lejeren (højrisiko-rolle)' },
+  ],
+  pimRequests: [],
+  pimActiveAssignments: [],
+  nextPimRequestId: 1,
+
+  // ── Password-politik ────────────────────────────────────────────────────
+  passwordPolicies: [
+    { id:'pwp-default', scope:'org', groupId:null, name:'Organisationsstandard', minLength:8, requireComplexity:true, mfaExempt:false, rotationDays:90, storageNote:'', loggingNote:'Standard sign-in logging og audit log' },
+  ],
 };
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -931,6 +954,30 @@ function findUser(id) { return db.users.find(u=>u.id===id); }
 function findGroup(id) { return db.groups.find(g=>g.id===id); }
 function findApp(id) { return db.apps.find(a=>a.id===id); }
 function findLocation(id) { return db.namedLocations.find(l=>l.id===id); }
+function findPimRole(id) { return db.pimRoles.find(r=>r.id===id); }
+function isEligibleFor(userId, roleId) { const u = findUser(userId); return !!(u && u.pimEligibleRoles && u.pimEligibleRoles.includes(roleId)); }
+function canApprovePim(user) { return !!(user && user.isAdmin); }
+function activeAssignmentsFor(userId) {
+  const now = Date.now();
+  return db.pimActiveAssignments.filter(a=>a.userId===userId && new Date(a.expiresAt).getTime()>now);
+}
+function allActiveAssignments() {
+  const now = Date.now();
+  return db.pimActiveAssignments.filter(a=>new Date(a.expiresAt).getTime()>now);
+}
+function hasActiveRole(userId, roleId) {
+  return activeAssignmentsFor(userId).some(a=>a.roleId===roleId);
+}
+function getPasswordPolicyForUser(user) {
+  const groupPolicy = db.passwordPolicies.find(p => p.scope==='group' && user.groups.includes(p.groupId));
+  return groupPolicy || db.passwordPolicies.find(p=>p.scope==='org');
+}
+function passwordPolicyCompliant(user) {
+  const policy = getPasswordPolicyForUser(user);
+  const lengthOk = (user.passwordLength||0) >= policy.minLength;
+  const complexOk = !policy.requireComplexity || !!user.passwordComplex;
+  return { ok: lengthOk && complexOk, policy, lengthOk, complexOk };
+}
 
 function isUserInScope(user, uc) {
   // Exclude first
@@ -971,7 +1018,8 @@ function isAppInScope(appId, ac) {
 
 function checkConditions(conds, sc) {
   const enabled = conds.clientApps.enabled || conds.devicePlatforms.enabled ||
-                  conds.locations.enabled   || conds.signInRisk.enabled;
+                  conds.locations.enabled   || conds.signInRisk.enabled ||
+                  (conds.activeRole && conds.activeRole.enabled);
   if (!enabled) return { ok:true, reason:'Ingen betingelser konfigureret – gælder altid' };
 
   // Client apps
@@ -1009,6 +1057,21 @@ function checkConditions(conds, sc) {
       return { ok:true, reason:`Lokation er inkluderet: ${loc?.name}` };
     }
     return { ok:false, reason:`Lokation er ikke i politikkens lokationsomfang: ${loc?.name}` };
+  }
+
+  // PIM: match sign-ins hvor brugeren IKKE har den krævede rolle aktiv via PIM.
+  // Kombineret med grant-kontrollen "Blokér adgang" giver det den tilsigtede effekt:
+  // adgang blokeres, indtil rollen er aktiveret — og tillades, mens den er aktiv
+  // (denne politik "gælder" ikke længere, så intet blokerer, når rollen er aktiv).
+  if (conds.activeRole && conds.activeRole.enabled) {
+    if (!conds.activeRole.roleId) {
+      return { ok:false, reason:'PIM-rolle-betingelse er ikke konfigureret endnu (vælg en rolle)' };
+    }
+    const role = findPimRole(conds.activeRole.roleId);
+    if (hasActiveRole(sc.userId, conds.activeRole.roleId)) {
+      return { ok:false, reason:`Rollen "${role?.name}" er allerede aktiveret via PIM – betingelsen "mangler aktiv rolle" er ikke opfyldt` };
+    }
+    return { ok:true, reason:`Brugeren har IKKE aktiveret PIM-rollen "${role?.name}" – betingelsen er opfyldt` };
   }
 
   return { ok:true, reason:'Alle betingelser opfyldt' };
@@ -1077,7 +1140,7 @@ function runWhatIf(sc) {
 // ════════════════════════════════════════════════════════════════════════════
 // NAVIGATION
 // ════════════════════════════════════════════════════════════════════════════
-const PAGE_LABELS = { overview:'Dashboard', policies:'Politikker', whatif:'What If', locations:'Named Locations', users:'Brugere', groups:'Grupper', logs:'Sign-in logs' };
+const PAGE_LABELS = { overview:'Dashboard', policies:'Politikker', whatif:'What If', locations:'Named Locations', pim:'PIM', users:'Brugere', groups:'Grupper', pwpolicy:'Password-politik', logs:'Sign-in logs' };
 
 function navigate(page) {
   db.currentPage = page;
@@ -1095,8 +1158,10 @@ function renderPage() {
     case 'policies':  el.innerHTML = renderPolicies(); break;
     case 'whatif':    el.innerHTML = renderWhatIf(); break;
     case 'locations': el.innerHTML = renderLocations(); break;
+    case 'pim':       el.innerHTML = renderPIM(); break;
     case 'users':     el.innerHTML = renderUsers(); break;
     case 'groups':    el.innerHTML = renderGroups(); break;
+    case 'pwpolicy':  el.innerHTML = renderPasswordPolicies(); break;
     case 'logs':      el.innerHTML = renderLogs(); break;
   }
   attachPageEvents();
@@ -1140,6 +1205,10 @@ function renderOverview() {
     <div class="stat-tile">
       <div class="stat-value">${db.signInLogs.length}</div>
       <div class="stat-label">What If-simuleringer</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-value" style="color:var(--warn)">${allActiveAssignments().length}</div>
+      <div class="stat-label">Aktive PIM-roller</div>
     </div>
   </div>
 
@@ -1509,7 +1578,7 @@ function renderUsers() {
   <div class="card">
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Navn</th><th>Brugertype</th><th>Afdeling / Rolle</th><th>Grupper</th><th>MFA</th><th>Enhed</th><th></th></tr></thead>
+        <thead><tr><th>Navn</th><th>Brugertype</th><th>Afdeling / Rolle</th><th>Grupper</th><th>MFA</th><th>Enhed</th><th>Password</th><th></th></tr></thead>
         <tbody>${db.users.map(u=>`
           <tr>
             <td>
@@ -1533,6 +1602,7 @@ function renderUsers() {
             </td>
             <td>${u.mfaRegistered?'<span class="badge badge-grant">✓ Registreret</span>':'<span class="badge badge-block">✗ Ikke registreret</span>'}</td>
             <td>${u.deviceCompliant?'<span class="badge badge-grant">Kompatibel</span>':'<span class="badge badge-mfa">Ikke-kompatibel</span>'}</td>
+            <td>${passwordPolicyCompliant(u).ok?'<span class="badge badge-grant">✓ OK</span>':'<span class="badge badge-block">✗ Krav ikke opfyldt</span>'}</td>
             <td>
               <div style="display:flex;gap:6px">
                 <button class="btn btn-secondary btn-sm" onclick="simulateAs('${u.id}')">What If</button>
@@ -1624,7 +1694,7 @@ function renderLogs() {
             : `<span class="badge badge-block">Blokeret</span>`;
           return `<tr>
             <td class="log-time">${fmtTime(entry.ts)}</td>
-            <td><div style="display:flex;align-items:center;gap:6px"><div class="user-avatar" style="background:${avatarColor(u.name)};width:22px;height:22px;font-size:9px">${initials(u.name)}</div>${u.name}</div></td>
+            <td><div style="display:flex;align-items:center;gap:6px"><div class="user-avatar" style="background:${avatarColor(u.name)};width:22px;height:22px;font-size:9px">${initials(u.name)}</div>${u.name} ${u.isBreakGlass?'<span class="badge" style="font-size:10px;background:var(--warn-bg);color:var(--warn)">⚠ Break-glass</span>':''}</div></td>
             <td class="text-sm">${a?.name||entry.sc.appId}</td>
             <td class="text-sm">${l?.name||entry.sc.locationId}</td>
             <td class="text-sm">${PLATFORM_LABELS[entry.sc.devicePlatform]}</td>
@@ -1650,9 +1720,9 @@ function fmtTime(d) {
 // ════════════════════════════════════════════════════════════════════════════
 let editingPolicyId = null;
 let editingPolicy = null;
-let _panelMode = 'policy'; // 'policy' | 'user' | 'location' | 'group'
-function panelSave()   { _panelMode==='user' ? saveUser() : _panelMode==='location' ? saveLocation() : _panelMode==='group' ? saveGroup() : savePolicy(); }
-function panelDelete() { _panelMode==='user' ? deleteUser() : _panelMode==='location' ? deleteLocation() : _panelMode==='group' ? deleteGroup() : deletePolicy(); }
+let _panelMode = 'policy'; // 'policy' | 'user' | 'location' | 'group' | 'pwpolicy'
+function panelSave()   { _panelMode==='user' ? saveUser() : _panelMode==='location' ? saveLocation() : _panelMode==='group' ? saveGroup() : _panelMode==='pwpolicy' ? savePwPolicy() : savePolicy(); }
+function panelDelete() { _panelMode==='user' ? deleteUser() : _panelMode==='location' ? deleteLocation() : _panelMode==='group' ? deleteGroup() : _panelMode==='pwpolicy' ? deletePwPolicy() : deletePolicy(); }
 
 function openPolicyPanel(id) {
   _panelMode = 'policy';
@@ -1668,7 +1738,8 @@ function openPolicyPanel(id) {
         locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]},
         devicePlatforms:{enabled:false,platforms:[]},
         clientApps:{enabled:false,apps:[]},
-        signInRisk:{enabled:false,levels:[]}
+        signInRisk:{enabled:false,levels:[]},
+        activeRole:{enabled:false,roleId:null}
       },
       grant:{ operator:'OR', controls:[] }
     };
@@ -1692,6 +1763,7 @@ function closePanel() {
   editingUserId = null;   editingUser = null;
   editingLocationId = null; editingLocation = null;
   editingGroupId = null;  editingGroup = null;
+  editingPwPolicyId = null; editingPwPolicy = null;
   // Nulstil evt. halvt-bekræftet sletning
   clearTimeout(_confirmTimer);
   _confirmPending = null;
@@ -1858,6 +1930,26 @@ function renderPanelBody() {
           </div>
         </div>` : ''}
       </div>
+
+      <div class="cond-section">
+        <label class="cond-toggle-label">
+          <input type="checkbox" ${p.conditions.activeRole && p.conditions.activeRole.enabled?'checked':''} onchange="toggleCond('activeRole',this.checked)">
+          Kræver aktiv PIM-rolle (blokér hvis ikke aktiveret)
+        </label>
+        ${p.conditions.activeRole && p.conditions.activeRole.enabled ? `<div class="sub-options">
+          <div class="form-group">
+            <label class="form-label">Rolle der skal være aktiveret</label>
+            <select class="form-select" onchange="setActiveRoleId(this.value)">
+              <option value="">Vælg rolle...</option>
+              ${db.pimRoles.map(r=>`<option value="${r.id}" ${p.conditions.activeRole.roleId===r.id?'selected':''}>${r.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="info-box mt-2" style="font-size:12px">
+            <span class="info-icon">ℹ️</span>
+            <div>Denne betingelse matcher, <strong>indtil</strong> brugeren har aktiveret rollen via PIM (ikke kun være eligible) – kombinér med grant-kontrollen "Blokér adgang" nedenfor, så adgangen kun tillades, mens rollen faktisk er aktiv. Se siden "PIM".</div>
+          </div>
+        </div>` : ''}
+      </div>
     </div>
 
     <!-- Grant -->
@@ -1897,6 +1989,7 @@ function setEditState(s) { editingPolicy.state=s; renderPanelBody(); }
 function setUserInclude(v) { editingPolicy.users.includeAll=(v==='all'); renderPanelBody(); }
 function setAppInclude(v) { editingPolicy.apps.includeAll=(v==='all'); renderPanelBody(); }
 function setLocInclude(v) { editingPolicy.conditions.locations.includeAll=(v==='all'); renderPanelBody(); }
+function setActiveRoleId(v) { editingPolicy.conditions.activeRole.roleId = v || null; renderPanelBody(); }
 
 function removeGroup(type, id) {
   if(type==='include') editingPolicy.users.includeGroups = editingPolicy.users.includeGroups.filter(g=>g!==id);
@@ -2013,6 +2106,9 @@ function openUserPanel(id) {
       deviceCompliant: false,
       guestUser: false,
       isAdmin: false,
+      pimEligibleRoles: [],
+      passwordLength: 8,
+      passwordComplex: false,
     };
     document.getElementById('panel-title').textContent = 'Ny bruger';
     document.getElementById('panel-delete-btn').style.display = 'none';
@@ -2102,7 +2198,53 @@ function renderUserPanelBody() {
         </div>
       </div>
     </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Password</div>
+      <div class="form-group">
+        <label class="form-label">Password-længde (antal tegn)</label>
+        <input type="number" class="form-input" id="ue-pwlen" min="0" max="128" value="${u.passwordLength||0}"
+          oninput="editingUser.passwordLength=parseInt(this.value,10)||0">
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius)">
+        <div>
+          <div style="font-weight:600;font-size:13px">Komplekst password</div>
+          <div style="font-size:12px;color:var(--t2)">Password opfylder kompleksitetskrav (store/små bogstaver, tal, specialtegn)</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${u.passwordComplex ? 'checked' : ''} onchange="editingUser.passwordComplex=this.checked">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">PIM – Eligible roller</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        ${db.pimRoles.map(role => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius)">
+          <div>
+            <div style="font-weight:600;font-size:13px">Eligible til: ${role.name}</div>
+            <div style="font-size:12px;color:var(--t2)">Brugeren kan selv anmode om tidsbegrænset aktivering af denne rolle via PIM (kræver godkendelse)</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" ${(u.pimEligibleRoles||[]).includes(role.id) ? 'checked' : ''} onchange="togglePimEligibility('${role.id}', this.checked)">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        `).join('')}
+      </div>
+    </div>
   `;
+}
+
+function togglePimEligibility(roleId, checked) {
+  if (!editingUser.pimEligibleRoles) editingUser.pimEligibleRoles = [];
+  if (checked) {
+    if (!editingUser.pimEligibleRoles.includes(roleId)) editingUser.pimEligibleRoles.push(roleId);
+  } else {
+    editingUser.pimEligibleRoles = editingUser.pimEligibleRoles.filter(r => r !== roleId);
+  }
 }
 
 function setUserType(isGuest) {
@@ -2277,6 +2419,361 @@ function deleteLocation() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// PIM — PRIVILEGED IDENTITY MANAGEMENT
+// ════════════════════════════════════════════════════════════════════════════
+let _pimRequestFormRoleId = null;
+
+function fmtDateTime(d) {
+  const dt = (d instanceof Date) ? d : new Date(d);
+  return dt.toLocaleDateString('da-DK',{day:'2-digit',month:'2-digit'}) + ' ' + dt.toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});
+}
+
+function renderPIM() {
+  const me = findUser(db.currentUserId);
+  const myEligible = (me.pimEligibleRoles||[]).map(roleId=>findPimRole(roleId)).filter(Boolean);
+  const myActive = activeAssignmentsFor(me.id);
+  const myPending = db.pimRequests.filter(r=>r.userId===me.id && r.status==='pending');
+  const canApprove = canApprovePim(me);
+  const allPending = db.pimRequests.filter(r=>r.status==='pending');
+  const history = db.pimRequests.filter(r=>r.status!=='pending');
+
+  return `
+  <div class="page-header">
+    <div class="page-title">PIM – Privileged Identity Management</div>
+    <div class="page-subtitle">Eligible roller, tidsbegrænset aktivering og godkendelse (Just-in-Time adgang)</div>
+  </div>
+
+  <div class="card mt-3" style="margin-bottom:20px">
+    <div class="card-header"><div class="card-title">Mine eligible roller — ${me.name}</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Rolle</th><th>Status</th><th></th></tr></thead>
+        <tbody>${myEligible.length ? myEligible.map(role=>{
+          const active = myActive.find(a=>a.roleId===role.id);
+          const pending = myPending.find(r=>r.roleId===role.id);
+          return `<tr>
+            <td class="td-name">${role.name}<div class="text-muted text-sm">${role.desc}</div></td>
+            <td>${active ? `<span class="badge badge-grant">✓ Aktiv til ${fmtDateTime(active.expiresAt)}</span>` : pending ? '<span class="badge badge-report">Afventer godkendelse</span>' : '<span class="badge badge-disabled">Ikke aktiv</span>'}</td>
+            <td>${active ? `<button class="btn btn-secondary btn-sm" onclick="deactivatePimRole('${active.id}')">Deaktiver nu</button>`
+                 : pending ? '<span class="text-muted text-sm">—</span>'
+                 : `<button class="btn btn-primary btn-sm" onclick="openPimRequestForm('${role.id}')">Anmod om aktivering</button>`}</td>
+          </tr>`;
+        }).join('') : '<tr><td colspan="3"><div class="empty-state" style="padding:20px"><div class="empty-sub">Du er ikke eligible for nogen privilegerede roller</div></div></td></tr>'}
+        </tbody>
+      </table>
+    </div>
+    ${_pimRequestFormRoleId ? renderPimRequestForm() : ''}
+  </div>
+
+  ${canApprove ? `
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header">
+      <div class="card-title">Afventende godkendelser</div>
+      ${allPending.length ? `<span class="nav-badge" style="margin-left:8px;background:var(--warn)">${allPending.length}</span>` : ''}
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Anmoder</th><th>Rolle</th><th>Varighed</th><th>Begrundelse</th><th></th></tr></thead>
+        <tbody>${allPending.length ? allPending.map(r=>{
+          const u = findUser(r.userId); const role = findPimRole(r.roleId);
+          return `<tr>
+            <td class="td-name">${u?.name||'—'}</td>
+            <td>${role?.name||'—'}</td>
+            <td>${r.durationHours} timer</td>
+            <td class="text-sm">${r.justification||'—'}</td>
+            <td style="display:flex;gap:6px">
+              <button class="btn btn-primary btn-sm" onclick="approvePimRequest('${r.id}')">Godkend</button>
+              <button class="btn btn-danger btn-sm" onclick="denyPimRequest('${r.id}')">Afvis</button>
+            </td>
+          </tr>`;
+        }).join('') : '<tr><td colspan="5"><div class="empty-state" style="padding:20px"><div class="empty-sub">Ingen afventende anmodninger</div></div></td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>` : ''}
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Historik</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Anmoder</th><th>Rolle</th><th>Status</th><th>Anmodet</th><th>Afgjort af</th></tr></thead>
+        <tbody>${history.length ? history.map(r=>{
+          const u=findUser(r.userId); const role=findPimRole(r.roleId); const approver=r.approverId?findUser(r.approverId):null;
+          return `<tr>
+            <td class="td-name">${u?.name||'—'}</td>
+            <td>${role?.name||'—'}</td>
+            <td>${r.status==='approved'?'<span class="badge badge-grant">Godkendt</span>':'<span class="badge badge-block">Afvist</span>'}</td>
+            <td class="text-sm">${fmtDateTime(r.requestedAt)}</td>
+            <td class="text-sm">${approver?.name||'—'}</td>
+          </tr>`;
+        }).join('') : '<tr><td colspan="5"><div class="empty-state" style="padding:20px"><div class="empty-sub">Ingen afgjorte anmodninger endnu</div></div></td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="info-box mt-3">
+    <span class="info-icon">💡</span>
+    <div>I denne simulator godkendes anmodninger ved at skifte "Simulér som bruger" (i venstre bund) til en bruger med godkenderret (Global Administrator) <strong>på samme computer/instans</strong> som anmodningen blev sendt fra — simulatoren har ingen server og kan derfor ikke synkronisere mellem to browsere.</div>
+  </div>`;
+}
+
+function renderPimRequestForm() {
+  const role = findPimRole(_pimRequestFormRoleId);
+  return `<div class="mt-3" style="border-top:1px solid var(--border);padding-top:16px">
+    <div class="panel-section-title" style="border-bottom:none;margin-bottom:8px">Anmod om aktivering — ${role?.name||''}</div>
+    <div class="form-group">
+      <label class="form-label">Varighed</label>
+      <select class="form-select" id="pim-duration">
+        <option value="1">1 time</option>
+        <option value="4" selected>4 timer</option>
+        <option value="8">8 timer</option>
+        <option value="24">24 timer</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Begrundelse</label>
+      <textarea class="form-input" id="pim-justification" rows="2" placeholder="f.eks. Skal konfigurere nye Conditional Access-politikker"></textarea>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary btn-sm" onclick="submitPimRequest()">Send anmodning</button>
+      <button class="btn btn-secondary btn-sm" onclick="closePimRequestForm()">Annuller</button>
+    </div>
+  </div>`;
+}
+
+function openPimRequestForm(roleId) { _pimRequestFormRoleId = roleId; renderPage(); }
+function closePimRequestForm() { _pimRequestFormRoleId = null; renderPage(); }
+
+function submitPimRequest() {
+  const duration = document.getElementById('pim-duration').value;
+  const justification = document.getElementById('pim-justification').value;
+  if (!justification.trim()) { showToast('Angiv en begrundelse for aktiveringen', 'error'); return; }
+  requestPimActivation(_pimRequestFormRoleId, duration, justification);
+}
+
+function requestPimActivation(roleId, durationHours, justification) {
+  const uid = db.currentUserId;
+  if (!isEligibleFor(uid, roleId)) { showToast('Du er ikke eligible for denne rolle', 'error'); return; }
+  if (hasActiveRole(uid, roleId)) { showToast('Rollen er allerede aktiv', 'error'); return; }
+  const already = db.pimRequests.find(r=>r.userId===uid && r.roleId===roleId && r.status==='pending');
+  if (already) { showToast('Du har allerede en afventende anmodning for denne rolle', 'error'); return; }
+  db.pimRequests.unshift({
+    id: 'pimreq-'+(db.nextPimRequestId++),
+    userId: uid, roleId, durationHours: Number(durationHours),
+    justification: justification.trim(),
+    requestedAt: new Date(), status:'pending', approverId:null, approverNote:null, resolvedAt:null
+  });
+  _pimRequestFormRoleId = null;
+  updatePimBadge();
+  renderPage();
+  showToast('Aktiveringsanmodning sendt – afventer godkendelse', 'ok');
+}
+
+function approvePimRequest(reqId) {
+  const req = db.pimRequests.find(r=>r.id===reqId);
+  if (!req || req.status!=='pending') return;
+  if (req.userId === db.currentUserId) { showToast('Du kan ikke godkende din egen anmodning (segregation of duties) – skift til en anden godkender', 'error'); return; }
+  const approver = findUser(db.currentUserId);
+  if (!canApprovePim(approver)) { showToast('Du har ikke rettigheder til at godkende anmodninger', 'error'); return; }
+  req.status = 'approved';
+  req.approverId = db.currentUserId;
+  req.resolvedAt = new Date();
+  const now = new Date();
+  const expires = new Date(now.getTime() + req.durationHours*3600*1000);
+  db.pimActiveAssignments.push({ id:'pimact-'+req.id, userId:req.userId, roleId:req.roleId, activatedAt:now, expiresAt:expires, requestId:req.id });
+  updatePimBadge();
+  renderPage();
+  showToast('Anmodning godkendt – rollen er nu aktiv', 'ok');
+}
+
+function denyPimRequest(reqId) {
+  const req = db.pimRequests.find(r=>r.id===reqId);
+  if (!req || req.status!=='pending') return;
+  const approver = findUser(db.currentUserId);
+  if (!canApprovePim(approver)) { showToast('Du har ikke rettigheder til at afvise anmodninger', 'error'); return; }
+  req.status = 'denied';
+  req.approverId = db.currentUserId;
+  req.resolvedAt = new Date();
+  updatePimBadge();
+  renderPage();
+  showToast('Anmodning afvist', 'ok');
+}
+
+function deactivatePimRole(assignmentId) {
+  db.pimActiveAssignments = db.pimActiveAssignments.filter(a=>a.id!==assignmentId);
+  updatePimBadge();
+  renderPage();
+  showToast('Rolle deaktiveret', 'ok');
+}
+
+function updatePimBadge() {
+  const el = document.getElementById('nav-badge-pim');
+  if (!el) return;
+  const count = db.pimRequests.filter(r=>r.status==='pending').length;
+  if (count > 0) { el.textContent = count; el.style.display = ''; } else { el.style.display = 'none'; }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PASSWORD-POLITIK
+// ════════════════════════════════════════════════════════════════════════════
+function renderPasswordPolicies() {
+  return `
+  <div class="page-header">
+    <div class="page-title">Password-politik</div>
+    <div class="page-subtitle">Krav til password-længde, kompleksitet, MFA-undtagelse, opbevaring og logging – pr. organisation eller gruppe</div>
+  </div>
+  <div class="cmd-bar">
+    <button class="btn btn-primary" onclick="openPwPolicyPanel('new')">
+      <svg viewBox="0 0 16 16"><path d="M9 7V1H7v6H1v2h6v6h2V9h6V7H9z"/></svg>
+      Ny gruppepolitik
+    </button>
+    <div class="cmd-bar-right">
+      <span class="text-muted text-sm">${db.passwordPolicies.length} politikker</span>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Navn</th><th>Omfang</th><th>Min. længde</th><th>Kompleksitet</th><th>MFA-undtaget</th><th>Rotation</th><th></th></tr></thead>
+        <tbody>${db.passwordPolicies.map(p=>`
+          <tr class="clickable" onclick="openPwPolicyPanel('${p.id}')">
+            <td class="td-name">${p.name}</td>
+            <td>${p.scope==='org' ? '<span class="badge badge-mfa">Organisation</span>' : `<span class="badge">${findGroup(p.groupId)?.name||p.groupId}</span>`}</td>
+            <td>${p.minLength} tegn</td>
+            <td>${p.requireComplexity?'<span class="badge badge-grant">Krævet</span>':'<span class="badge badge-block">Ikke krævet</span>'}</td>
+            <td>${p.mfaExempt?'<span class="badge badge-mfa">Ja</span>':'—'}</td>
+            <td>${p.rotationDays>0 ? p.rotationDays+' dage' : 'Ingen automatisk rotation'}</td>
+            <td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openPwPolicyPanel('${p.id}')">Rediger</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">Kontooverholdelse</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Bruger</th><th>Gældende politik</th><th>Password-længde</th><th>Kompleksitet</th><th>Overholder krav</th></tr></thead>
+        <tbody>${db.users.map(u=>{
+          const res = passwordPolicyCompliant(u);
+          return `<tr>
+            <td class="td-name">${u.name} ${u.isBreakGlass?'<span class="badge" style="font-size:10px;background:var(--warn-bg);color:var(--warn)">⚠ Break-glass</span>':''}</td>
+            <td class="text-sm">${res.policy.name}</td>
+            <td>${u.passwordLength||0} tegn</td>
+            <td>${u.passwordComplex?'Ja':'Nej'}</td>
+            <td>${res.ok?'<span class="badge badge-grant">✓ Opfylder krav</span>':'<span class="badge badge-block">✗ Opfylder ikke krav</span>'}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="info-box mt-3">
+    <span class="info-icon">💡</span>
+    <div>Break-glass-konti har typisk MFA-undtagelse (da de netop skal kunne bruges hvis MFA-tjenesten er nede), men bør derfor kompensere med et markant stærkere password end organisationsstandarden, striks opbevaring (fx forseglet kuvert i fysisk pengeskab) og skærpet logging/alarmering ved brug.</div>
+  </div>`;
+}
+
+let editingPwPolicyId = null;
+let editingPwPolicy = null;
+
+function openPwPolicyPanel(id) {
+  _panelMode = 'pwpolicy';
+  editingPwPolicyId = id;
+  if (id === 'new') {
+    const firstNonAll = db.groups.find(g=>g.id!=='g-all') || db.groups[0];
+    editingPwPolicy = {
+      id: 'pwp-' + Date.now(),
+      scope: 'group',
+      groupId: firstNonAll ? firstNonAll.id : null,
+      name: 'Ny gruppepolitik',
+      minLength: 12,
+      requireComplexity: true,
+      mfaExempt: false,
+      rotationDays: 90,
+      storageNote: '',
+      loggingNote: ''
+    };
+    document.getElementById('panel-title').textContent = 'Ny password-politik';
+    document.getElementById('panel-delete-btn').style.display = 'none';
+  } else {
+    const p = db.passwordPolicies.find(p=>p.id===id);
+    editingPwPolicy = JSON.parse(JSON.stringify(p));
+    document.getElementById('panel-title').textContent = p.name || 'Rediger politik';
+    document.getElementById('panel-delete-btn').style.display = editingPwPolicy.scope==='org' ? 'none' : 'inline-flex';
+  }
+  renderPwPolicyPanelBody();
+  document.getElementById('policy-panel').classList.add('open');
+  document.getElementById('panel-overlay').classList.add('open');
+}
+
+function renderPwPolicyPanelBody() {
+  const p = editingPwPolicy;
+  document.getElementById('panel-body').innerHTML = `
+    <div class="panel-section">
+      <div class="panel-section-title">Navn &amp; omfang</div>
+      <div class="form-group">
+        <label class="form-label">Politiknavn</label>
+        <input type="text" class="form-input" value="${p.name}" oninput="editingPwPolicy.name=this.value;document.getElementById('panel-title').textContent=this.value">
+      </div>
+      ${p.scope==='group' ? `<div class="form-group">
+        <label class="form-label">Gælder for gruppe</label>
+        <select class="form-select" onchange="editingPwPolicy.groupId=this.value">
+          ${db.groups.map(g=>`<option value="${g.id}" ${g.id===p.groupId?'selected':''}>${g.name}</option>`).join('')}
+        </select>
+      </div>` : `<div class="info-box" style="font-size:12px"><span class="info-icon">ℹ️</span><div>Dette er organisationens standardpolitik og gælder for alle konti uden en mere specifik gruppepolitik.</div></div>`}
+    </div>
+    <div class="panel-section">
+      <div class="panel-section-title">Krav</div>
+      <div class="form-group">
+        <label class="form-label">Min. password-længde</label>
+        <input type="number" class="form-input" min="4" max="64" value="${p.minLength}" oninput="editingPwPolicy.minLength=parseInt(this.value)||0">
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px">
+        <div><div style="font-weight:600;font-size:13px">Kræv kompleksitet</div><div style="font-size:12px;color:var(--t2)">Krav om store/små bogstaver, tal og specialtegn</div></div>
+        <label class="toggle-switch"><input type="checkbox" ${p.requireComplexity?'checked':''} onchange="editingPwPolicy.requireComplexity=this.checked"><span class="toggle-track"></span></label>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px">
+        <div><div style="font-weight:600;font-size:13px">MFA-undtaget</div><div style="font-size:12px;color:var(--t2)">Kontoen er undtaget fra MFA-krav (typisk kun relevant for break-glass)</div></div>
+        <label class="toggle-switch"><input type="checkbox" ${p.mfaExempt?'checked':''} onchange="editingPwPolicy.mfaExempt=this.checked"><span class="toggle-track"></span></label>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Automatisk rotation <span class="form-label-hint">(0 = ingen automatisk rotation)</span></label>
+        <input type="number" class="form-input" min="0" value="${p.rotationDays}" oninput="editingPwPolicy.rotationDays=parseInt(this.value)||0">
+      </div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-section-title">Opbevaring &amp; logging</div>
+      <div class="form-group">
+        <label class="form-label">Opbevaring af password</label>
+        <textarea class="form-input" rows="2" oninput="editingPwPolicy.storageNote=this.value" placeholder="f.eks. Forseglet kuvert i fysisk pengeskab, to-mands-princip">${p.storageNote||''}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Logging/alarmering ved brug</label>
+        <textarea class="form-input" rows="2" oninput="editingPwPolicy.loggingNote=this.value" placeholder="f.eks. Alarm til SOC ved hvert login">${p.loggingNote||''}</textarea>
+      </div>
+    </div>
+  `;
+}
+
+function savePwPolicy() {
+  const p = editingPwPolicy;
+  if (!p.name.trim()) { showToast('Politiknavnet må ikke være tomt', 'error'); return; }
+  const idx = db.passwordPolicies.findIndex(x=>x.id===p.id);
+  if (idx >= 0) db.passwordPolicies[idx] = p; else db.passwordPolicies.push(p);
+  closePanel();
+  renderPage();
+}
+
+function deletePwPolicy() {
+  panelConfirm(`Slet politikken "${editingPwPolicy.name}"?`, () => {
+    db.passwordPolicies = db.passwordPolicies.filter(p=>p.id!==editingPwPolicy.id);
+    closePanel();
+    renderPage();
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // GROUP PANEL
 // ════════════════════════════════════════════════════════════════════════════
 let editingGroupId = null;
@@ -2400,6 +2897,7 @@ function conditionsLabel(c) {
   if (c.clientApps.enabled && c.clientApps.apps.length)   parts.push('Klientapp');
   if (c.devicePlatforms.enabled)                           parts.push('Platform');
   if (c.locations.enabled)                                 parts.push('Lokation');
+  if (c.activeRole && c.activeRole.enabled)                parts.push('PIM-rolle');
   return parts.length ? parts.join(', ') : '<span class="text-muted text-sm">Ingen</span>';
 }
 function updateNavBadge() {
@@ -2461,7 +2959,7 @@ function updateThemeIcon() {
 // ════════════════════════════════════════════════════════════════════════════
 
 // Which fields to include in the export snapshot
-const EXPORT_FIELDS = ['policies','users','groups','namedLocations','nextPolicyId','nextGroupId'];
+const EXPORT_FIELDS = ['policies','users','groups','namedLocations','nextPolicyId','nextGroupId','pimRoles','passwordPolicies'];
 
 function exportData() {
   const snapshot = {};
@@ -2571,6 +3069,7 @@ function attachPageEvents() {
 // INIT
 // ════════════════════════════════════════════════════════════════════════════
 initUserSwitcher();
+updatePimBadge();
 navigate('overview');
 updateThemeIcon();
 </script>
