@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!doctype html><html lang="da"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Cloud ID — Conditional Access Simulator</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -732,7 +733,7 @@ input:checked + .toggle-track::after { transform: translateX(16px); }
       <div class="nav-item" data-page="policies" onclick="navigate('policies')">
         <svg viewBox="0 0 16 16"><path d="M2 2h12v2H2V2zm0 4h12v2H2V6zm0 4h7v2H2v-2zm0 4h7v2H2v-2zm9-4h5v6h-5v-6z"/></svg>
         Politikker
-        <span class="nav-badge" id="nav-badge-count">6</span>
+        <span class="nav-badge" id="nav-badge-count">7</span>
       </div>
       <div class="nav-item" data-page="whatif" onclick="navigate('whatif')">
         <svg viewBox="0 0 16 16"><path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm1 12H7V7h2v5zm0-7H7V3h2v2z"/></svg>
@@ -916,15 +917,22 @@ const db = {
       conditions:{ locations:{enabled:true,includeAll:true,includeLocations:[],excludeLocations:['loc-office','loc-dk']}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:false,levels:[]}, activeRole:{enabled:false,roleId:null} },
       grant:{ operator:'OR', controls:['block'] }
     },
+    {
+      id:'pol-7', name:'Kræv aktiv PIM-rolle (Global Administrator) – Azure Management', state:'enabled',
+      users:{ includeAll:true, includeGroups:[], includeUsers:[], excludeGroups:[], excludeUsers:[] },
+      apps:{ includeAll:false, includeApps:['app-azure'], excludeApps:[] },
+      conditions:{ locations:{enabled:false,includeAll:true,includeLocations:[],excludeLocations:[]}, devicePlatforms:{enabled:false,platforms:[]}, clientApps:{enabled:false,apps:[]}, signInRisk:{enabled:false,levels:[]}, activeRole:{enabled:true,roleId:'role-ga'} },
+      grant:{ operator:'OR', controls:['block'] }
+    },
   ],
 
   signInLogs: [],
-  nextPolicyId: 7,
+  nextPolicyId: 8,
   nextGroupId: 1,
 
   // ── PIM / Privileged Identity Management ──────────────────────────────
   pimRoles: [
-    { id:'role-ga', name:'Global Administrator', desc:'Fuld administrativ adgang til hele Entra ID-lejeren (højrisiko-rolle)' },
+    { id:'role-ga', name:'Global Administrator', desc:'Fuld administrativ adgang til hele Entra ID-tenanten (højrisiko-rolle)' },
   ],
   pimRequests: [],
   pimActiveAssignments: [],
@@ -1183,7 +1191,7 @@ function renderOverview() {
   return `
   <div class="page-header">
     <div class="page-title">Dashboard</div>
-    <div class="page-subtitle">Overblik over Conditional Access i Contoso-lejeren</div>
+    <div class="page-subtitle">Overblik over Conditional Access i Contoso-tenanten</div>
   </div>
   <div class="stat-grid">
     <div class="stat-tile">
@@ -1564,7 +1572,7 @@ function renderUsers() {
   return `
   <div class="page-header">
     <div class="page-title">Brugere</div>
-    <div class="page-subtitle">Testbrugere og gruppemedlemskaber i Contoso-lejeren</div>
+    <div class="page-subtitle">Testbrugere og gruppemedlemskaber i Contoso-tenanten</div>
   </div>
   <div class="cmd-bar">
     <button class="btn btn-primary" onclick="openUserPanel('new')">
@@ -1800,7 +1808,7 @@ function renderPanelBody() {
         <div class="radio-group">
           <label class="radio-item ${p.users.includeAll?'selected':''}">
             <input type="radio" name="u-include" value="all" ${p.users.includeAll?'checked':''} onchange="setUserInclude('all')">
-            <label>Alle brugere <small>Gælder for alle konti i lejeren</small></label>
+            <label>Alle brugere <small>Gælder for alle konti i tenanten</small></label>
           </label>
           <label class="radio-item ${!p.users.includeAll?'selected':''}">
             <input type="radio" name="u-include" value="groups" ${!p.users.includeAll?'checked':''} onchange="setUserInclude('groups')">
@@ -3073,5 +3081,7 @@ updatePimBadge();
 navigate('overview');
 updateThemeIcon();
 </script>
+
+</body></html>
 
 </body></html>

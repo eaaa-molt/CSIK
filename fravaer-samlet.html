@@ -614,8 +614,8 @@ function loadFile(file) {
           const dataRows = rawRows.slice(1).filter(r => String(r[nameCol]||'').trim());
           const maxMin   = Math.max(0, ...dataRows.map(r => parseFloat(r[vIdx]) || 0));
           if (maxMin > 0) {
-            // 1 lektion = 45 min (1 par/modul = 90 min = 2 lektioner)
-            excelHeld[label] = Math.round(maxMin / 45);
+            // 1 lektion = 1 session = 90 min (EAAA tæller 90-min sessioner som lektioner)
+            excelHeld[label] = Math.round(maxMin / 90);
           }
         }
       });
@@ -694,11 +694,8 @@ function loadCSV(file) {
         if (date <= today) counts[fag].held++;
       }
 
-      // Omregn fra rækker (moduler) til lektioner: 1 modul = 2 lektioner
-      Object.keys(counts).forEach(fag => {
-        counts[fag].total *= 2;
-        counts[fag].held  *= 2;
-      });
+      // Hver CSV-række = 1 lektion (90 min session) i EAAA's tællesystem
+      // Ingen omregningsfaktor nødvendig
 
       scheduleData = counts;
       const fagCount = Object.keys(counts).length;
@@ -786,7 +783,7 @@ function project(cur, held, total) {
 }
 
 function classify(cur, best) {
-  if (best > 20)    return 'red';
+  if (parseFloat(best.toFixed(1)) > 20) return 'red';
   if (cur  >= 15)   return 'amber';
   if (cur  >= 10)   return 'yellow';
   return 'green';
@@ -803,7 +800,7 @@ function statusObj(cur, best) {
   return map[k];
 }
 
-function barFill(p) { return p > 20 ? 'f-red' : p >= 15 ? 'f-amber' : p >= 10 ? 'f-yellow' : 'f-green'; }
+function barFill(p) { return parseFloat(p.toFixed(1)) > 20 ? 'f-red' : p >= 15 ? 'f-amber' : p >= 10 ? 'f-yellow' : 'f-green'; }
 function fmt(n) { return n.toFixed(1) + ' %'; }
 
 // ═══════════════════════════════════════
